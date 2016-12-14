@@ -87,3 +87,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# PyPI credential files (template is already committed)
+.pypirc
