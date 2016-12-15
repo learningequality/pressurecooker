@@ -9,6 +9,7 @@ with open('README.md') as readme_file:
 
 requirements = [
     "ffmpy>=0.2.2",
+    "le-utils>=0.0.9rc13",
 ]
 
 test_requirements = [
@@ -30,7 +31,8 @@ setup(
     install_requires=requirements,
     license="MIT license",
     zip_safe=False,
-    keywords=['media', 'mediaprocessing', 'video', 'compression', 'thumbnails', 'pressurecooker'],
+    keywords=['media', 'mediaprocessing', 'video',
+              'compression', 'thumbnails', 'pressurecooker'],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
