@@ -28,3 +28,11 @@ def extract_thumbnail_from_video(fpath_in, fpath_out):
         outputs={fpath_out: "-vcodec png -ss 10 -vframes 1 -an -f rawvideo -y"}
     )
     ff.run()
+
+
+def compress_video(source_file_path, target_file):
+    # Construct command for compressing video
+    command = ["ffmpeg", "-n", "-i", source_file_path, "-profile:v", "baseline",
+               "-level", "3.0", "-b:a", "32k", "-ac", "1", "-vf", "\"scale='trunc(oh*a/2)*2:min(ih,480)'\"",
+               "-crf", "32", "-preset", "slow", "-strict", "-2", target_file]
+    subprocess.call(command)
