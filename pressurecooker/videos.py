@@ -33,6 +33,6 @@ def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
 def compress_video(source_file_path, target_file, overwrite=False):
     # Construct command for compressing video
     command = ["ffmpeg", "-y" if overwrite else "-n", "-i", source_file_path, "-profile:v", "baseline",
-               "-level", "3.0", "-b:a", "32k", "-ac", "1", "-vf", "\"scale='trunc(oh*a/2)*2:min(ih,480)'\"",
+               "-level", "3.0", "-b:a", "32k", "-ac", "1", "-vf", "scale='trunc(oh*a/2)*2:min(ih,480)'",
                "-crf", "32", "-preset", "slow", "-strict", "-2", target_file]
     subprocess.call(command)
