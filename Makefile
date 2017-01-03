@@ -1,7 +1,7 @@
 clean:
-	rm -r dist/ || true
+	rm -r dist || true
 
-dist:
+dist: clean
 	python setup.py bdist_wheel --universal
 
 release_staging: dist
