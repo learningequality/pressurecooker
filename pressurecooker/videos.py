@@ -10,7 +10,7 @@ def check_video_resolution(videopath):
     result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',
                                       'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
     pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
-    resolution = pattern.search(result)
+    resolution = pattern.search(str(result))
     if resolution and int(resolution.group(2)) >= 720:
         return format_presets.VIDEO_HIGH_RES
     else:
@@ -25,7 +25,7 @@ def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
 
     ff = FFmpeg(
         inputs={str(fpath_in): "-y" if overwrite else "-n"},
-        outputs={fpath_out: "-vcodec png -ss 10 -vframes 1 -an -f rawvideo -y"}
+        outputs={fpath_out: "-nostats -loglevel 0 -vcodec png -ss 10 -vframes 1 -an -f rawvideo -y"}
     )
     ff.run()
 
