@@ -27,3 +27,13 @@ def write_base64_to_file(encoding, fpath_out):
 
     with open(fpath_out, "wb") as target_file:
         target_file.write(base64.decodestring(encoding_match.group(1).encode('utf-8')))
+
+def encode_file_to_base64(fpath_in, prefix):
+    """ encode_file_to_base64: gets base64 encoding of file
+        Args:
+            fpath_in (str): path to file to encode
+            prefix (str): file data for encoding (e.g. 'data:image/png;base64,')
+        Returns: base64 encoding of file
+    """
+    with open(fpath_in, 'rb') as file_obj:
+        return prefix + base64.b64encode(file_obj.read()).decode('utf-8')
