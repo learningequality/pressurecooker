@@ -30,9 +30,12 @@ def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
     ff.run()
 
 
-def compress_video(source_file_path, target_file, overwrite=False):
+def compress_video(source_file_path, target_file, overwrite=False, **kwargs):
     # Construct command for compressing video
+    scale = "'{}:-1'".format(kwargs['max_width']) if 'max_width' in kwargs else "'trunc(oh*a/2)*2:min(ih,480)'"
+    crf = kwargs['crf'] if 'crf' in kwargs else 32
     command = ["ffmpeg", "-y" if overwrite else "-n", "-i", source_file_path, "-profile:v", "baseline",
-               "-level", "3.0", "-b:a", "32k", "-ac", "1", "-vf", "scale='trunc(oh*a/2)*2:min(ih,480)'",
-               "-crf", "32", "-preset", "slow", "-strict", "-2", target_file]
+               "-level", "3.0", "-b:a", "32k", "-ac", "1", "-vf", "scale={}".format(scale),
+               "-crf", str(crf), "-preset", "slow", "-strict", "-2", "-v", "quiet", "-stats", target_file]
+
     subprocess.call(command)
