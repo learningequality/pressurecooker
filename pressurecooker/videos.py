@@ -6,7 +6,7 @@ from ffmpy import FFmpeg
 from le_utils.constants import format_presets
 
 
-def check_video_resolution(videopath):
+def guess_video_preset_by_resolution(videopath):
     result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',
                                       'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
     pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
@@ -22,12 +22,11 @@ def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
     Extract a thumbnail from the video given through the fobj_in file object. The thumbnail image
     will be written in the file object given in fobj_out.
     """
+    command = ["ffmpeg", "-y" if overwrite else "-n", "-i", str(fpath_in), "-vf", "select=gt(scene\,0.4)",
+               "-frames:v", "5", "-vsync", "vfr", "-vcodec", "png", "-nostats", "-loglevel", "0", "-an",
+               "-f", "rawvideo", str(fpath_out)]
 
-    ff = FFmpeg(
-        inputs={str(fpath_in): "-y" if overwrite else "-n"},
-        outputs={fpath_out: "-nostats -loglevel 0 -vcodec png -ss 10 -vframes 1 -an -f rawvideo -y"}
-    )
-    ff.run()
+    subprocess.call(command)
 
 
 def compress_video(source_file_path, target_file, overwrite=False, **kwargs):
