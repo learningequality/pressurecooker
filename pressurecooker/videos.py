@@ -22,9 +22,12 @@ def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
     Extract a thumbnail from the video given through the fobj_in file object. The thumbnail image
     will be written in the file object given in fobj_out.
     """
-    command = ["ffmpeg", "-y" if overwrite else "-n", "-i", str(fpath_in), "-vf", "select=gt(scene\,0.4)",
-               "-frames:v", "5", "-vsync", "vfr", "-vcodec", "png", "-nostats", "-loglevel", "0", "-an",
-               "-f", "rawvideo", str(fpath_out)]
+    result = subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of',
+                                      'default=noprint_wrappers=1:nokey=1', "-loglevel", "panic", str(fpath_in)])
+
+    duration = float(re.search("\d+\.\d+", str(result)).group()) / 2
+    command = ['ffmpeg',"-y" if overwrite else "-n", '-i', str(fpath_in), "-vcodec", "png", "-nostats",
+              '-ss', str(duration), '-vframes', '1', '-q:v', '2', "-loglevel", "panic", str(fpath_out)]
 
     subprocess.call(command)
 

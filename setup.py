@@ -10,6 +10,7 @@ with open('README.md') as readme_file:
 requirements = [
     "ffmpy>=0.2.2",
     "le-utils>=0.0.9rc13",
+    "pillow>=3.3.1",
 ]
 
 test_requirements = [
