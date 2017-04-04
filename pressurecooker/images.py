@@ -20,9 +20,9 @@ def create_tiled_image(source_images, fpath_out):
 
     y_offset = 0
     index = 0
-    while y_offset < max_dimension and index < len(images):
+    while y_offset < max_dimension - offset and index < len(images):
         x_offset = 0
-        while x_offset < max_dimension:
+        while x_offset < max_dimension - offset and index < len(images):
             im = ImageOps.fit(images[index], (int(offset), int(offset)), Image.ANTIALIAS)
             new_im.paste(im, (int(x_offset), int(y_offset)))
             x_offset += offset
