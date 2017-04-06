@@ -1,5 +1,6 @@
 import math
 from PIL import Image, ImageOps
+from wand.image import Image as pdfImage
 
 def create_tiled_image(source_images, fpath_out):
     """
@@ -29,3 +30,9 @@ def create_tiled_image(source_images, fpath_out):
             index += 1
         y_offset += offset
     new_im.save(fpath_out)
+
+def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
+    with pdfImage(filename="{}[{}]".format(fpath_in, page_number)) as img:
+        size = min(img.width, img.height)
+        img.crop(width=size, height=size, gravity='center')
+        img.save(filename=fpath_out)

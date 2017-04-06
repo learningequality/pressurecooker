@@ -11,6 +11,7 @@ requirements = [
     "ffmpy>=0.2.2",
     "le-utils>=0.0.9rc13",
     "pillow>=3.3.1",
+    "Wand==0.4.4",
 ]
 
 test_requirements = [
