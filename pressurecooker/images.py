@@ -1,6 +1,14 @@
 import math
+import tempfile
+import numpy as np
+import wave
+import subprocess
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image, ImageOps
-from wand.image import Image as pdfImage
+from wand.image import Image as pdfImage # Must also have imagemagick and ghostscript installed
 
 def create_tiled_image(source_images, fpath_out):
     """
@@ -31,8 +39,65 @@ def create_tiled_image(source_images, fpath_out):
         y_offset += offset
     new_im.save(fpath_out)
 
-def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
+def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0, position='north'):
+    """
+    Create an image from the pdf at fpath_in and write result to fpath_out.
+    position options: 'forget', 'north_west', 'north', 'north_east', 'west', 'center', 'east', 'south_west', 'south', 'south_east', 'static'
+    """
+    assert fpath_in.endswith('pdf'), "File must be in pdf format"
     with pdfImage(filename="{}[{}]".format(fpath_in, page_number)) as img:
         size = min(img.width, img.height)
-        img.crop(width=size, height=size, gravity='center')
+        img.crop(width=size, height=size, gravity=position)
         img.save(filename=fpath_out)
+
+
+def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_options=None):
+    """
+    Create a waveform image from audio or video file at fpath_in and write to fpath_out
+    Colormaps can be found at http://matplotlib.org/examples/color/colormaps_reference.html
+    """
+    colormap_options = colormap_options or {}
+    cmap_name = colormap_options.get('name') or 'cool'
+    vmin = colormap_options.get('vmin') or 0
+    vmax = colormap_options.get('vmax') or 1
+
+    with tempfile.TemporaryFile(suffix=".wav") as tempwav:
+        tempwav.close()
+        subprocess.call(['ffmpeg', '-y', '-i', fpath_in, '-cpu-used', '-16', tempwav.name])
+        spf = wave.open(tempwav.name, 'r')
+
+        #Extract Raw Audio from Wav File
+        signal = spf.readframes(-1)
+        signal = np.fromstring(signal, 'Int16')
+
+        # Get subarray from middle
+        length = len(signal)
+        count = max_num_of_points or length
+        subsignals = signal[(length-count)/2 : (length+count)/2]
+
+        # Set up max and min values for axes
+        X = [[.6, .6], [.7, .7]]
+        xmin, xmax = xlim = 0, count
+        max_y_axis = max(-min(subsignals), max(subsignals))
+        ymin, ymax = ylim = -max_y_axis, max_y_axis
+
+        # Set up canvas according to user settings
+        figure = Figure()
+        canvas = FigureCanvasAgg(figure)
+        ax = figure.add_subplot(111, xlim=xlim, ylim=ylim, autoscale_on=False, frameon=False)
+        ax.set_yticklabels([])
+        ax.set_xticklabels([])
+        ax.set_xticks([])
+        ax.set_yticks([])
+        cmap = plt.get_cmap(cmap_name)
+        cmap = LinearSegmentedColormap.from_list(
+            'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=vmin, b=vmax),
+            cmap(np.linspace(vmin, vmax, 100))
+        )
+        ax.imshow(X, interpolation='bicubic', cmap=cmap, extent=(xmin, xmax, ymin, ymax), alpha=1)
+
+        # Plot points
+        ax.plot(zip(np.arange(count), subsignals), 'w')
+        ax.set_aspect('auto')
+
+        canvas.print_figure(fpath_out)
