@@ -60,6 +60,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
     cmap_name = colormap_options.get('name') or 'cool'
     vmin = colormap_options.get('vmin') or 0
     vmax = colormap_options.get('vmax') or 1
+    color = colormap_options.get('color') or 'w'
 
     with tempfile.TemporaryFile(suffix=".wav") as tempwav:
         tempwav.close()
@@ -97,7 +98,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         ax.imshow(X, interpolation='bicubic', cmap=cmap, extent=(xmin, xmax, ymin, ymax), alpha=1)
 
         # Plot points
-        ax.plot(zip(np.arange(count), subsignals), 'w')
+        ax.plot(zip(np.arange(count), subsignals), color)
         ax.set_aspect('auto')
 
         canvas.print_figure(fpath_out)
