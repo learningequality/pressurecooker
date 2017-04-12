@@ -62,7 +62,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
     vmax = colormap_options.get('vmax') or 1
     color = colormap_options.get('color') or 'w'
 
-    with tempfile.TemporaryFile(suffix=".wav") as tempwav:
+    with tempfile.NamedTemporaryFile(suffix=".wav") as tempwav:
         tempwav.close()
         subprocess.call(['ffmpeg', '-y', '-i', fpath_in, '-cpu-used', '-16', tempwav.name])
         spf = wave.open(tempwav.name, 'r')
