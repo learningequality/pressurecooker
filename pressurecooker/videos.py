@@ -7,13 +7,16 @@ from le_utils.constants import format_presets
 
 
 def guess_video_preset_by_resolution(videopath):
-    result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',
-                                      'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
-    pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
-    resolution = pattern.search(str(result))
-    if resolution and int(resolution.group(2)) >= 720:
-        return format_presets.VIDEO_HIGH_RES
-    else:
+    try:
+        result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',
+                                          'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
+        pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
+        resolution = pattern.search(str(result))
+        if resolution and int(resolution.group(2)) >= 720:
+            return format_presets.VIDEO_HIGH_RES
+        else:
+            return format_presets.VIDEO_LOW_RES
+    except Exception:
         return format_presets.VIDEO_LOW_RES
 
 
