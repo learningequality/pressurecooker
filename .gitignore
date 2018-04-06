@@ -1,3 +1,9 @@
+# video caches used for tests
+video_cache_py3.sqlite
+video_cache.sqlite
+.pytest_cache
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -9,6 +15,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
+venv/
+venv2/
 build/
 develop-eggs/
 dist/
