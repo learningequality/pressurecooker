@@ -1,7 +1,9 @@
 from __future__ import print_function
 import pytest
+import re
 import requests
 import requests_cache
+import subprocess
 import sys
 import tempfile
 
@@ -47,6 +49,12 @@ def high_res_video():
         f.flush()
         yield f
 
+@pytest.fixture
+def bad_video():
+    with tempfile.NamedTemporaryFile(suffix='.mp4') as f:
+        f.write(b'novideohere. ffmpeg soshould error')
+        f.flush()
+        yield f
 
 
 class Test_check_video_resolution:
@@ -78,4 +86,51 @@ class Test_extract_thumbnail_from_video:
             pngf.seek(0)
             assert pngf.read(2) == PNG_MAGIC_NUMBER
 
+
+
+
+
+def get_resolution(videopath):
+    """Helper function to get resolution of video at videopath."""
+    result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',
+                                      'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
+    pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
+    m = pattern.search(str(result))
+    width, height = int(m.group(1)), int(m.group(2))
+    return width, height
+
+
+class Test_compress_video:
+
+    def test_compression_works(self, high_res_video):
+        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True)
+            width, height = get_resolution(vout.name)
+            assert height == 480, 'should compress to 480 v resolution by defualt'
+
+    def test_compression_max_width(self, high_res_video):
+        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=120)
+            width, height = get_resolution(vout.name)
+            assert width == 120, 'should be 120 h resolution since max_width set'
+
+    def test_compression_max_width_odd(self, high_res_video):
+        """
+        regression test for: https://github.com/learningequality/pressurecooker/issues/11
+        """
+        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=121)
+            width, height = get_resolution(vout.name)
+            assert width == 120, 'should round down to 120 h resolution when max_width=121 set'
+
+    def test_compression_max_height(self, high_res_video):
+        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_height=140)
+            width, height = get_resolution(vout.name)
+            assert height == 140, 'should be 140 v resolution since max_height set'
+
+    def test_raises_for_bad_file(self, bad_video):
+        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
+            with pytest.raises(videos.VideoCompressionError):
+                videos.compress_video(bad_video.name, vout.name, overwrite=True)
 

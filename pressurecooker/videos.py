@@ -6,13 +6,21 @@ from ffmpy import FFmpeg
 from le_utils.constants import format_presets
 
 
+
+
 def guess_video_preset_by_resolution(videopath):
+    """
+    Run `ffprobe` to find resolution classify as high resolution (video height >= 720),
+    or low resolution (video height < 720).
+    Return appropriate video format preset: VIDEO_HIGH_RES or VIDEO_LOW_RES.
+    """
     try:
         result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',
                                           'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
         pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
-        resolution = pattern.search(str(result))
-        if resolution and int(resolution.group(2)) >= 720:
+        match = pattern.search(str(result))
+        width, height = int(match.group(1)), int(match.group(2))
+        if match and height >= 720:
             return format_presets.VIDEO_HIGH_RES
         else:
             return format_presets.VIDEO_LOW_RES
@@ -22,25 +30,53 @@ def guess_video_preset_by_resolution(videopath):
 
 def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
     """
-    Extract a thumbnail from the video given through the fobj_in file object. The thumbnail image
-    will be written in the file object given in fobj_out.
+    Extract a thumbnail from the video given through the `fobj_in` file object.
+    The thumbnail image will be written in the file object given in `fobj_out`.
     """
     result = subprocess.check_output(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of',
                                       'default=noprint_wrappers=1:nokey=1', "-loglevel", "panic", str(fpath_in)])
 
-    duration = float(re.search("\d+\.\d+", str(result)).group()) / 2
+    midpoint = float(re.search("\d+\.\d+", str(result)).group()) / 2
     command = ['ffmpeg',"-y" if overwrite else "-n", '-i', str(fpath_in), "-vcodec", "png", "-nostats",
-              '-ss', str(duration), '-vframes', '1', '-q:v', '2', "-loglevel", "panic", str(fpath_out)]
-
+              '-ss', str(midpoint), '-vframes', '1', '-q:v', '2', "-loglevel", "panic", str(fpath_out)]
     subprocess.call(command)
+
+
+
+class VideoCompressionError(Exception):
+    """
+    Custom error returned when `ffmpeg` compression exits with a non-zero status.
+    """
+    pass
 
 
 def compress_video(source_file_path, target_file, overwrite=False, **kwargs):
-    # Construct command for compressing video
-    scale = "'{}:-1'".format(kwargs['max_width']) if 'max_width' in kwargs else "'trunc(oh*a/2)*2:min(ih,480)'"
+    """
+    Compress and scale video at `source_file_path` using setting provided in `kwargs`:
+      - max_height (int): set a limit for maximum vertical resolution (default: 480)
+      - max_width (int): set a limit for maximum horizontal resolution for video
+      - crf (int): set compresion constant rate factor (default 32 = compress a lot)
+    Save compressed output video to `target_file`.
+    """
+    # scaling
+    # The output width and height for ffmpeg scale param must be divisible by 2
+    # using value -2 to get robust behaviour: maintains the aspect ratio and also
+    # ensure the calculated dimension is divisible by 2
+    if 'max_width' in kwargs:
+        scale = "'w=trunc(min(iw,{max_width})/2)*2:h=-2'".format(max_width=kwargs['max_width'])
+    elif 'max_height' in kwargs:
+        scale = "'w=-2:h=trunc(min(ih,{max_height})/2)*2'".format(max_height=kwargs['max_height'])
+    else:
+        scale = "'w=-2:h=trunc(min(ih,480)/2)*2'"  # default to max-height 480px
+
+    # set constant rate factor, see https://trac.ffmpeg.org/wiki/Encode/H.264#crf
     crf = kwargs['crf'] if 'crf' in kwargs else 32
+
+    # run command
     command = ["ffmpeg", "-y" if overwrite else "-n", "-i", source_file_path, "-profile:v", "baseline",
                "-level", "3.0", "-b:a", "32k", "-ac", "1", "-vf", "scale={}".format(scale),
                "-crf", str(crf), "-preset", "slow", "-strict", "-2", "-v", "quiet", "-stats", target_file]
-
-    subprocess.call(command)
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as e:
+        raise VideoCompressionError(e)
