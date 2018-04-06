@@ -19,8 +19,10 @@ def guess_video_preset_by_resolution(videopath):
                                           'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
         pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
         match = pattern.search(str(result))
+        if match is None:
+            return format_presets.VIDEO_LOW_RES
         width, height = int(match.group(1)), int(match.group(2))
-        if match and height >= 720:
+        if height >= 720:
             return format_presets.VIDEO_HIGH_RES
         else:
             return format_presets.VIDEO_LOW_RES
