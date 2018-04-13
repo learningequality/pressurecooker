@@ -31,7 +31,7 @@ def low_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-    return f
+        return f
 
 
 @pytest.fixture
@@ -46,14 +46,14 @@ def high_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-    return f
+        return f
 
 @pytest.fixture
 def bad_video():
     with TempFile(suffix='.mp4') as f:
         f.write(b'novideohere. ffmpeg soshould error')
         f.flush()
-    return f
+        return f
 
 
 
@@ -82,11 +82,10 @@ class Test_extract_thumbnail_from_video:
 
     def test_returns_an_image(self, low_res_video):
         with TempFile(suffix=".png") as pngf:
-            pass
-        videos.extract_thumbnail_from_video(low_res_video.name, pngf.name, overwrite=True)
-        with open(pngf.name, "rb") as f:
-            f.seek(0)
-            assert f.read(2) == PNG_MAGIC_NUMBER
+            videos.extract_thumbnail_from_video(low_res_video.name, pngf.name, overwrite=True)
+            with open(pngf.name, "rb") as f:
+                f.seek(0)
+                assert f.read(2) == PNG_MAGIC_NUMBER
 
 
 
@@ -106,46 +105,41 @@ class Test_compress_video:
 
     def test_compression_works(self, high_res_video):
         with TempFile(suffix=".mp4") as vout:
-            pass
-        videos.compress_video(high_res_video.name, vout.name, overwrite=True)
-        width, height = get_resolution(vout.name)
-        assert height == 480, 'should compress to 480 v resolution by defualt'
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True)
+            width, height = get_resolution(vout.name)
+            assert height == 480, 'should compress to 480 v resolution by defualt'
 
     def test_compression_max_width(self, high_res_video):
         with TempFile(suffix=".mp4") as vout:
-            pass
-        videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=120)
-        width, height = get_resolution(vout.name)
-        assert width == 120, 'should be 120 h resolution since max_width set'
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=120)
+            width, height = get_resolution(vout.name)
+            assert width == 120, 'should be 120 h resolution since max_width set'
 
     def test_compression_max_width_odd(self, high_res_video):
         """
         regression test for: https://github.com/learningequality/pressurecooker/issues/11
         """
         with TempFile(suffix=".mp4") as vout:
-            pass
-        videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=121)
-        width, height = get_resolution(vout.name)
-        assert width == 120, 'should round down to 120 h resolution when max_width=121 set'
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=121)
+            width, height = get_resolution(vout.name)
+            assert width == 120, 'should round down to 120 h resolution when max_width=121 set'
 
     def test_compression_max_height(self, high_res_video):
         with TempFile(suffix=".mp4") as vout:
-            pass
-        videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_height=140)
-        width, height = get_resolution(vout.name)
-        assert height == 140, 'should be 140 v resolution since max_height set'
+            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_height=140)
+            width, height = get_resolution(vout.name)
+            assert height == 140, 'should be 140 v resolution since max_height set'
 
     def test_raises_for_bad_file(self, bad_video):
         with TempFile(suffix=".mp4") as vout:
-            pass
-        with pytest.raises(videos.VideoCompressionError):
-            videos.compress_video(bad_video.name, vout.name, overwrite=True)
+            with pytest.raises(videos.VideoCompressionError):
+                videos.compress_video(bad_video.name, vout.name, overwrite=True)
 
 
 
 ## Helper class for cross-platform temporary files
 
-def remove_file(*args, **kwargs):
+def remove_temp_file(*args, **kwargs):
     filename = args[0]
     try:
         os.remove(filename)
@@ -169,7 +163,7 @@ class TempFile(object):
     def __enter__(self):
         # create a temporary file as per usual, but set it up to be deleted once we're done
         self.f = tempfile.NamedTemporaryFile(*self.args, delete=False, **self.kwargs)
-        atexit.register(remove_file, self.f.name)
+        atexit.register(remove_temp_file, self.f.name)
         return self.f
 
     def __exit__(self, _type, value, traceback):
