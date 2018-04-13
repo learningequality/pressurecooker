@@ -50,7 +50,7 @@ def high_res_video():
 
 
 @pytest.fixture
-def high_res_ogv_video():
+def low_res_ogv_video():
     with TempFile(suffix='.ogv') as f:
         resp = requests.get(
             "https://archive.org/download/"
@@ -175,9 +175,9 @@ class Test_convert_video:
             width, height = get_resolution(vout.name)
             assert height == 480, 'should convert .ogv to .mp4 and set 480 v res'
 
-    def test_convert_and_resize_ogv_works(self, high_res_ogv_video):
+    def test_convert_and_resize_ogv_works(self, low_res_ogv_video):
         with TempFile(suffix=".mp4") as vout:
-            videos.compress_video(high_res_ogv_video.name, vout.name, overwrite=True, max_height=200)
+            videos.compress_video(low_res_ogv_video.name, vout.name, overwrite=True, max_height=200)
             width, height = get_resolution(vout.name)
             assert height == 200, 'should convert .ogv to .mp4 and set 200 v res'
 
