@@ -6,11 +6,38 @@ import requests_cache
 import subprocess
 import sys
 import tempfile
-
+import os
+import atexit
+from pressurecooker import videos
 from le_utils.constants import format_presets
 
-# SUT
-from pressurecooker import videos
+def remove_file(*args, **kwargs):
+    filename = args[0]
+    try:
+        os.remove(filename)
+    except FileNotFoundError:
+        pass
+    assert not os.path.exists(filename)
+
+class TempFile(object):
+    """tempfile.NamedTemporaryFile deletes the file as soon as the filehandle is closed.
+       This is OK on unix but on Windows the file can't be used by other commands
+       (i.e. ffmpeg) unti the file is closed.
+       Temporary files are instead deleted when we quit."""
+
+    def __init__(self, *args, **kwargs):
+        # all parameters will be passed to NamedTemporaryFile
+        self.args = args
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        # create a temporary file as per usual, but set it up to be deleted once we're done
+        self.f=tempfile.NamedTemporaryFile(*self.args, delete=False, **self.kwargs)
+        atexit.register(remove_file, self.f.name)
+        return self.f
+
+    def __exit__(self, _type, value, traceback):
+        self.f.close()
 
 
 # cache, so we don't keep requesting the full videos
@@ -24,7 +51,7 @@ else:
 
 @pytest.fixture
 def low_res_video():
-    with tempfile.NamedTemporaryFile(suffix='.mp4') as f:
+    with TempFile(suffix='.mp4') as f:
         resp = requests.get(
             "https://archive.org/download/vd_is_for_everybody/vd_is_for_everybody_512kb.mp4",
             stream=True,
@@ -32,12 +59,12 @@ def low_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-        yield f
+    return f
 
 
 @pytest.fixture
 def high_res_video():
-    with tempfile.NamedTemporaryFile(suffix='.mp4') as f:
+    with TempFile(suffix='.mp4') as f:
         resp = requests.get(
             "https://ia800201.us.archive.org/7/items/"
             "UnderConstructionFREEVideoBackgroundLoopHD1080p/"
@@ -47,14 +74,14 @@ def high_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-        yield f
+    return f
 
 @pytest.fixture
 def bad_video():
-    with tempfile.NamedTemporaryFile(suffix='.mp4') as f:
+    with TempFile(suffix='.mp4') as f:
         f.write(b'novideohere. ffmpeg soshould error')
         f.flush()
-        yield f
+    return f
 
 
 class Test_check_video_resolution:
@@ -81,14 +108,12 @@ PNG_MAGIC_NUMBER = b'\x89P'
 class Test_extract_thumbnail_from_video:
 
     def test_returns_an_image(self, low_res_video):
-        with tempfile.NamedTemporaryFile(suffix=".png") as pngf:
-            videos.extract_thumbnail_from_video(low_res_video.name, pngf.name, overwrite=True)
-            pngf.seek(0)
-            assert pngf.read(2) == PNG_MAGIC_NUMBER
-
-
-
-
+        with TempFile(suffix=".png") as pngf:
+            pass
+        videos.extract_thumbnail_from_video(low_res_video.name, pngf.name, overwrite=True)
+        with open(pngf.name, "rb") as f:
+            f.seek(0)
+            assert f.read(2) == PNG_MAGIC_NUMBER
 
 def get_resolution(videopath):
     """Helper function to get resolution of video at videopath."""
@@ -103,34 +128,38 @@ def get_resolution(videopath):
 class Test_compress_video:
 
     def test_compression_works(self, high_res_video):
-        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
-            videos.compress_video(high_res_video.name, vout.name, overwrite=True)
-            width, height = get_resolution(vout.name)
-            assert height == 480, 'should compress to 480 v resolution by defualt'
+        with TempFile(suffix=".mp4") as vout:
+            pass
+        videos.compress_video(high_res_video.name, vout.name, overwrite=True)
+        width, height = get_resolution(vout.name)
+        assert height == 480, 'should compress to 480 v resolution by defualt'
 
     def test_compression_max_width(self, high_res_video):
-        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
-            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=120)
-            width, height = get_resolution(vout.name)
-            assert width == 120, 'should be 120 h resolution since max_width set'
+        with TempFile(suffix=".mp4") as vout:
+            pass
+        videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=120)
+        width, height = get_resolution(vout.name)
+        assert width == 120, 'should be 120 h resolution since max_width set'
 
     def test_compression_max_width_odd(self, high_res_video):
         """
         regression test for: https://github.com/learningequality/pressurecooker/issues/11
         """
-        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
-            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=121)
-            width, height = get_resolution(vout.name)
-            assert width == 120, 'should round down to 120 h resolution when max_width=121 set'
+        with TempFile(suffix=".mp4") as vout:
+            pass
+        videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_width=121)
+        width, height = get_resolution(vout.name)
+        assert width == 120, 'should round down to 120 h resolution when max_width=121 set'
 
     def test_compression_max_height(self, high_res_video):
-        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
-            videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_height=140)
-            width, height = get_resolution(vout.name)
-            assert height == 140, 'should be 140 v resolution since max_height set'
+        with TempFile(suffix=".mp4") as vout:
+            pass
+        videos.compress_video(high_res_video.name, vout.name, overwrite=True, max_height=140)
+        width, height = get_resolution(vout.name)
+        assert height == 140, 'should be 140 v resolution since max_height set'
 
     def test_raises_for_bad_file(self, bad_video):
-        with tempfile.NamedTemporaryFile(suffix=".mp4") as vout:
-            with pytest.raises(videos.VideoCompressionError):
-                videos.compress_video(bad_video.name, vout.name, overwrite=True)
-
+        with TempFile(suffix=".mp4") as vout:
+            pass
+        with pytest.raises(videos.VideoCompressionError):
+            videos.compress_video(bad_video.name, vout.name, overwrite=True)
