@@ -77,8 +77,8 @@ def compress_video(source_file_path, target_file, overwrite=False, **kwargs):
     # run command
     command = ["ffmpeg", "-y" if overwrite else "-n", "-i", source_file_path, "-profile:v", "baseline",
                "-level", "3.0", "-b:a", "32k", "-ac", "1", "-vf", "scale={}".format(scale),
-               "-crf", str(crf), "-preset", "slow", "-strict", "-2", "-v", "quiet", "-stats", target_file]
+               "-crf", str(crf), "-preset", "slow", "-v", "error", "-strict", "-2", "-stats", target_file]
     try:
-        subprocess.check_call(command)
+        subprocess.check_output(command, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
-        raise VideoCompressionError(e)
+        raise VideoCompressionError("{}: {}".format(e, e.output))
