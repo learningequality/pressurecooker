@@ -31,7 +31,7 @@ def low_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-    return f               # returns a closed temporary (closed file descriptor)
+    return f            # returns a temporary file with a closed file descriptor
 
 
 @pytest.fixture
@@ -46,14 +46,44 @@ def high_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-    return f               # returns a closed temporary (closed file descriptor)
+    return f            # returns a temporary file with a closed file descriptor
+
+
+@pytest.fixture
+def high_res_ogv_video():
+    with TempFile(suffix='.ogv') as f:
+        resp = requests.get(
+            "https://archive.org/download/"
+            "UnderConstructionFREEVideoBackgroundLoopHD1080p/"
+            "UnderConstruction%20-%20FREE%20Video%20Background%20Loop%20HD%201080p.ogv",
+            stream=True
+        )
+        for chunk in resp.iter_content(chunk_size=1048576):
+            f.write(chunk)
+        f.flush()
+    return f            # returns a temporary file with a closed file descriptor
+
+@pytest.fixture
+def high_res_mov_video():
+    with TempFile(suffix='.mov') as f:
+        resp = requests.get(
+            "https://ia800201.us.archive.org/7/items/"
+            "UnderConstructionFREEVideoBackgroundLoopHD1080p/"
+            "cold%20night.mov",
+            stream=True
+        )
+        for chunk in resp.iter_content(chunk_size=1048576):
+            f.write(chunk)
+        f.flush()
+    return f            # returns a temporary file with a closed file descriptor
+
 
 @pytest.fixture
 def bad_video():
     with TempFile(suffix='.mp4') as f:
         f.write(b'novideohere. ffmpeg soshould error')
         f.flush()
-    return f               # returns a closed temporary (closed file descriptor)
+    return f            # returns a temporary file with a closed file descriptor
 
 
 
@@ -134,6 +164,23 @@ class Test_compress_video:
         with TempFile(suffix=".mp4") as vout:
             with pytest.raises(videos.VideoCompressionError):
                 videos.compress_video(bad_video.name, vout.name, overwrite=True)
+
+
+
+class Test_convert_video:
+
+    def test_convert_mov_works(self, high_res_mov_video):
+        with TempFile(suffix=".mp4") as vout:
+            videos.compress_video(high_res_mov_video.name, vout.name, overwrite=True)
+            width, height = get_resolution(vout.name)
+            assert height == 480, 'should convert .ogv to .mp4 and set 480 v res'
+
+    def test_convert_and_resize_ogv_works(self, high_res_ogv_video):
+        with TempFile(suffix=".mp4") as vout:
+            videos.compress_video(high_res_ogv_video.name, vout.name, overwrite=True, max_height=200)
+            width, height = get_resolution(vout.name)
+            assert height == 200, 'should convert .ogv to .mp4 and set 200 v res'
+
 
 
 
