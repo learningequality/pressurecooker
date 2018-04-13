@@ -31,7 +31,7 @@ def low_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-        return f
+    return f               # returns a closed temporary (closed file descriptor)
 
 
 @pytest.fixture
@@ -46,14 +46,14 @@ def high_res_video():
         for chunk in resp.iter_content(chunk_size=1048576):
             f.write(chunk)
         f.flush()
-        return f
+    return f               # returns a closed temporary (closed file descriptor)
 
 @pytest.fixture
 def bad_video():
     with TempFile(suffix='.mp4') as f:
         f.write(b'novideohere. ffmpeg soshould error')
         f.flush()
-        return f
+    return f               # returns a closed temporary (closed file descriptor)
 
 
 
