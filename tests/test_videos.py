@@ -1,4 +1,6 @@
 from __future__ import print_function
+import atexit
+import os
 import pytest
 import re
 import requests
@@ -6,38 +8,9 @@ import requests_cache
 import subprocess
 import sys
 import tempfile
-import os
-import atexit
-from pressurecooker import videos
+
 from le_utils.constants import format_presets
-
-def remove_file(*args, **kwargs):
-    filename = args[0]
-    try:
-        os.remove(filename)
-    except FileNotFoundError:
-        pass
-    assert not os.path.exists(filename)
-
-class TempFile(object):
-    """tempfile.NamedTemporaryFile deletes the file as soon as the filehandle is closed.
-       This is OK on unix but on Windows the file can't be used by other commands
-       (i.e. ffmpeg) unti the file is closed.
-       Temporary files are instead deleted when we quit."""
-
-    def __init__(self, *args, **kwargs):
-        # all parameters will be passed to NamedTemporaryFile
-        self.args = args
-        self.kwargs = kwargs
-
-    def __enter__(self):
-        # create a temporary file as per usual, but set it up to be deleted once we're done
-        self.f=tempfile.NamedTemporaryFile(*self.args, delete=False, **self.kwargs)
-        atexit.register(remove_file, self.f.name)
-        return self.f
-
-    def __exit__(self, _type, value, traceback):
-        self.f.close()
+from pressurecooker import videos
 
 
 # cache, so we don't keep requesting the full videos
@@ -45,7 +18,6 @@ if sys.version_info[0] == 3:
     requests_cache.install_cache("video_cache_py3")
 else:
     requests_cache.install_cache("video_cache")
-
 
 
 
@@ -84,6 +56,7 @@ def bad_video():
     return f
 
 
+
 class Test_check_video_resolution:
 
     def test_returns_a_format_preset(self, low_res_video):
@@ -114,6 +87,10 @@ class Test_extract_thumbnail_from_video:
         with open(pngf.name, "rb") as f:
             f.seek(0)
             assert f.read(2) == PNG_MAGIC_NUMBER
+
+
+
+
 
 def get_resolution(videopath):
     """Helper function to get resolution of video at videopath."""
@@ -163,3 +140,38 @@ class Test_compress_video:
             pass
         with pytest.raises(videos.VideoCompressionError):
             videos.compress_video(bad_video.name, vout.name, overwrite=True)
+
+
+
+## Helper class for cross-platform temporary files
+
+def remove_file(*args, **kwargs):
+    filename = args[0]
+    try:
+        os.remove(filename)
+    except FileNotFoundError:
+        pass
+    assert not os.path.exists(filename)
+
+class TempFile(object):
+    """
+    tempfile.NamedTemporaryFile deletes the file as soon as the filehandle is closed.
+    This is OK on unix but on Windows the file can't be used by other commands
+    (i.e. ffmpeg) unti the file is closed.
+    Temporary files are instead deleted when we quit.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # all parameters will be passed to NamedTemporaryFile
+        self.args = args
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        # create a temporary file as per usual, but set it up to be deleted once we're done
+        self.f = tempfile.NamedTemporaryFile(*self.args, delete=False, **self.kwargs)
+        atexit.register(remove_file, self.f.name)
+        return self.f
+
+    def __exit__(self, _type, value, traceback):
+        self.f.close()
+
