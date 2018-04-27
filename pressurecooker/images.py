@@ -1,8 +1,18 @@
 import math
 import tempfile
 import numpy as np
+import os
 import wave
 import subprocess
+import sys
+
+# On OS X, the default backend will fail if you are not using a Framework build of Python,
+# e.g. in a virtualenv. To avoid having to set MPLBACKEND each time we use Pressure Cooker,
+# automatically set the backend.
+if sys.platform.startswith("darwin"):
+    import matplotlib
+    matplotlib.use('PS')
+
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.colors import LinearSegmentedColormap
@@ -56,16 +66,25 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
     Create a waveform image from audio or video file at fpath_in and write to fpath_out
     Colormaps can be found at http://matplotlib.org/examples/color/colormaps_reference.html
     """
+
     colormap_options = colormap_options or {}
     cmap_name = colormap_options.get('name') or 'cool'
     vmin = colormap_options.get('vmin') or 0
     vmax = colormap_options.get('vmax') or 1
     color = colormap_options.get('color') or 'w'
 
-    with tempfile.NamedTemporaryFile(suffix=".wav") as tempwav:
-        tempwav.close()
-        subprocess.call(['ffmpeg', '-y', '-i', fpath_in, '-cpu-used', '-16', tempwav.name])
-        spf = wave.open(tempwav.name, 'r')
+    tempwav_fh, tempwav_name = tempfile.mkstemp(suffix=".wav")
+    os.close(tempwav_fh)  # close the file handle so ffmpeg can write to the file
+    try:
+        ffmpeg_cmd = ['ffmpeg', '-y', '-i', fpath_in]
+        # The below settings apply to the WebM encoder, which doesn't seem to be built by Homebrew on Mac,
+        # so we apply them conditionally.
+        if not sys.platform.startswith('darwin'):
+            ffmpeg_cmd.extend(['-cpu-used', '-16'])
+        ffmpeg_cmd += [tempwav_name]
+        subprocess.call(ffmpeg_cmd)
+
+        spf = wave.open(tempwav_name, 'r')
 
         #Extract Raw Audio from Wav File
         signal = spf.readframes(-1)
@@ -102,3 +121,5 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         ax.set_aspect('auto')
 
         canvas.print_figure(fpath_out)
+    finally:
+        os.remove(tempwav_name)
