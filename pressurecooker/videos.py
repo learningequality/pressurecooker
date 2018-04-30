@@ -57,7 +57,7 @@ def compress_video(source_file_path, target_file, overwrite=False, **kwargs):
     Compress and scale video at `source_file_path` using setting provided in `kwargs`:
       - max_height (int): set a limit for maximum vertical resolution (default: 480)
       - max_width (int): set a limit for maximum horizontal resolution for video
-      - crf (int): set compresion constant rate factor (default 32 = compress a lot)
+      - crf (int): set compression constant rate factor (default 32 = compress a lot)
     Save compressed output video to `target_file`.
     """
     # scaling
