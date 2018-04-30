@@ -76,7 +76,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
     tempwav_fh, tempwav_name = tempfile.mkstemp(suffix=".wav")
     os.close(tempwav_fh)  # close the file handle so ffmpeg can write to the file
     try:
-        ffmpeg_cmd = ['ffmpeg', '-y', '-i', fpath_in]
+        ffmpeg_cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-i', fpath_in]
         # The below settings apply to the WebM encoder, which doesn't seem to be built by Homebrew on Mac,
         # so we apply them conditionally.
         if not sys.platform.startswith('darwin'):
@@ -93,7 +93,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         # Get subarray from middle
         length = len(signal)
         count = max_num_of_points or length
-        subsignals = signal[(length-count)/2 : (length+count)/2]
+        subsignals = signal[int((length-count)/2):int((length+count)/2)]
 
         # Set up max and min values for axes
         X = [[.6, .6], [.7, .7]]
@@ -117,7 +117,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         ax.imshow(X, interpolation='bicubic', cmap=cmap, extent=(xmin, xmax, ymin, ymax), alpha=1)
 
         # Plot points
-        ax.plot(zip(np.arange(count), subsignals), color)
+        ax.plot(np.arange(count), subsignals, color)
         ax.set_aspect('auto')
 
         canvas.print_figure(fpath_out)
