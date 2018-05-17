@@ -11,7 +11,8 @@ import sys
 # automatically set the backend.
 if sys.platform.startswith("darwin"):
     import matplotlib
-    matplotlib.use('PS')
+    if matplotlib.get_backend().lower() == "macosx":
+        matplotlib.use('PS')
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
