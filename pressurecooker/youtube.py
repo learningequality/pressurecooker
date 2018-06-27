@@ -24,15 +24,22 @@ def get_youtube_info(youtube_url):
             'subtitles': {},
             'requested_subtitles': '',
             'artist': '',
-            'license': ''
+            'license': '',
+            '_type': 'video'
         }
 
         for field_name in extracted_fields:
+            info_name = field_name
+            if info_name == '_type':
+                info_name = 'kind'
+            elif info_name == 'webpage_url':
+                info_name = 'source_url'
             if field_name in results:
-                leaf[field_name] = results[field_name]
+                leaf[info_name] = results[field_name]
             else:
-                leaf[field_name] = extracted_fields[field_name]
+                leaf[info_name] = extracted_fields[field_name]
 
+        # print("Results = {}".format(results))
         if 'entries' in results:
             leaf['children'] = []
             for entry in results['entries']:
@@ -41,17 +48,8 @@ def get_youtube_info(youtube_url):
 
         return leaf
 
+    keys = list(results.keys())
+    keys.sort()
     tree = add_to_tree(results)
 
     return tree
-
-def download_youtube_videos(videos, output_directory=None):
-    """
-    Downloads the videos specified and returns information about the downloaded videos.
-
-    :param videos: A dictionary object with information about the video(s) to download.
-    :param output_directory:
-    :return:
-    """
-
-    pass
