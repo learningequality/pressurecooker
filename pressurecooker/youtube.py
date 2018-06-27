@@ -17,6 +17,7 @@ def get_youtube_info(youtube_url):
 
         # dict mapping of field name and default value when not found.
         extracted_fields = {
+            'id': '',
             'title': '',
             'description': '',
             'webpage_url': '',
