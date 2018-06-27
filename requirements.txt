@@ -1,3 +1,4 @@
+beautifulsoup4==4.5.1
 ffmpy>=0.2.2
 le-utils>=0.1.9
 matplotlib==2.0.0
