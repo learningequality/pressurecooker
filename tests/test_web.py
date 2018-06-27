@@ -1,14 +1,14 @@
 import os
 import tempfile
 
-from pressurecooker import html
+from pressurecooker import web
 
 test_dir = os.path.dirname(__file__)
 
 
 def test_get_links():
     filename = os.path.abspath(os.path.join(test_dir, "files", "page_with_links.html"))
-    parser = html.HTMLParser(filename)
+    parser = web.HTMLParser(filename)
     links = parser.get_links()
 
     expected_links = [
@@ -30,7 +30,7 @@ def test_get_links():
 
 def test_get_local_files():
     filename = os.path.abspath(os.path.join(test_dir, "files", "page_with_links.html"))
-    parser = html.HTMLParser(filename)
+    parser = web.HTMLParser(filename)
     links = parser.get_local_files()
 
     expected_links = [
@@ -51,7 +51,7 @@ def test_get_local_files():
 
 def test_replace_links():
     filename = os.path.abspath(os.path.join(test_dir, "files", "page_with_links.html"))
-    parser = html.HTMLParser(filename)
+    parser = web.HTMLParser(filename)
 
     original_links = [
         'assets/css/empty.css',
@@ -68,7 +68,7 @@ def test_replace_links():
 
     new_html = parser.replace_links(replacement_links)
 
-    new_parser = html.HTMLParser(html=new_html)
+    new_parser = web.HTMLParser(html=new_html)
     links = new_parser.get_links()
 
     for link in links:
