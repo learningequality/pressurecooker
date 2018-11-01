@@ -20,6 +20,7 @@ def get_youtube_info(youtube_url):
             'id': '',
             'title': '',
             'description': '',
+            'thumbnail': '',
             'webpage_url': '',
             'tags': [],
             'subtitles': {},
