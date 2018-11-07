@@ -16,6 +16,7 @@ requirements = [
     "Pillow>=3.3.1",
     "youtube-dl>=2018.11.7",
     "Wand==0.4.4",
+    "webvtt-py>=0.4.2",
 ]
 
 test_requirements = [
