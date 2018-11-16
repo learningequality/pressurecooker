@@ -4,12 +4,28 @@ import youtube_dl
 
 
 def get_youtube_info(youtube_url):
+    """
+    Convenience function for retrieving YouTube resource information. Wraps YouTubeResource.get_resource_info.
+
+    :param youtube_url: URL of YouTube resource to get information on.
+
+    :return: A dictionary object containing information about the YouTube resource.
+    """
     resource = YouTubeResource(youtube_url)
     return resource.get_resource_info()
 
 
 class YouTubeResource:
+    """
+    This class encapsulates functionality related to information retrieval and download of YouTube resources.
+    Resources may include videos, playlists and channels.
+    """
     def __init__(self, url):
+        """
+        Initializes the YouTube resource, and calls the get_resource_info method to retrieve resource information.
+
+        :param url: URL of a YouTube resource. URL may point to a video, playlist or channel.
+        """
         self.url = url
         self.resource_info = {}
         self.subtitles = {}
@@ -19,6 +35,8 @@ class YouTubeResource:
     def get_resource_info(self, refresh=False):
         """
         This method checks the YouTube URL, then returns a dictionary object with info about the video(s) in it.
+
+        :param refresh: If True, re-downloads the information if it already exists. Defaults to False.
 
         :return: A dictionary object containing information about the channel, playlist or video.
         """
@@ -37,15 +55,23 @@ class YouTubeResource:
 
     def get_resource_subtitles(self):
         """
-        Retrieves the subtitles for the video(s) represented by this resource.
+        Retrieves the subtitles for the video(s) represented by this resource. Subtitle information will be
+        contained in the 'subtitles' key of the dictionary object returned.
 
-        :return:
+        :return: A dictionary object that contains information about video subtitles
         """
         client = youtube_dl.YoutubeDL(dict(verbose=True, no_warnings=True, writesubtitles=True, allsubtitles=True))
         results = client.extract_info(self.url, download=False, process=True)
         return results
 
     def _format_for_ricecooker(self, results):
+        """
+        Internal method for converting YouTube resource info into the format expected by ricecooker.
+
+        :param results: YouTube resource dictionary object to be converted to ricecooker format.
+
+        :return: A dictionary object in the format expected by ricecooker.
+        """
         leaf = {}
 
         # dict mapping of field name and default value when not found.
@@ -85,6 +111,14 @@ class YouTubeResource:
         return leaf
 
     def check_for_content_issues(self, filter=False):
+        """
+        Checks the YouTube resource and looks for any issues that may prevent download or distribution of the material,
+        or would otherwise imply that the resource is not suitable for use in Kolibri.
+
+        :param filter: If True, remove videos with issues from the returned resource info. Defaults to False.
+
+        :return: A tuple containing a list of videos with waranings, and the resource info as a dictionary object.
+        """
         output_video_info = self.resource_info
         videos_with_warnings = []
         if filter:
