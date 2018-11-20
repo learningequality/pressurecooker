@@ -1,12 +1,14 @@
-import os
 import hashlib
+import os
+import pytest
+import sys
 
-from pressurecooker import converters
 
 test_dir = os.path.dirname(__file__)
 
-
+@pytest.mark.skipif(sys.version_info < (3,0), reason="The webvtt lib is py3 only")
 def test_srt2vtt():
+    from pressurecooker import converters  # moved here to avoid importing on py2.7
     def get_hash_file(path):
         hash = hashlib.md5()
         with open(path, 'rb') as fobj:

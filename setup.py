@@ -16,8 +16,12 @@ requirements = [
     "Pillow>=3.3.1",
     "youtube-dl>=2018.11.7",
     "Wand==0.4.4",
-    "webvtt-py>=0.4.2",
 ]
+
+py3only_requirements = {
+    ':python_version>="3.4"': ['webvtt-py>=0.4.2']
+}
+
 
 test_requirements = [
     # TODO: put package test requirements here
@@ -36,6 +40,7 @@ setup(
                  'presurecooker'},
     include_package_data=True,
     install_requires=requirements,
+    extras_require=py3only_requirements,
     license="MIT license",
     zip_safe=False,
     keywords=['media', 'mediaprocessing', 'video',
