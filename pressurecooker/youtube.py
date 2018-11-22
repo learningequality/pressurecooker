@@ -36,7 +36,7 @@ class YouTubeResource:
         :param url: URL of a YouTube resource. URL may point to a video, playlist or channel.
         """
 
-        if not 'youtube.com' in url:
+        if not 'youtube.com' in url and not 'youtu.be' in url:
             raise utils.VideoURLFormatError(url, 'YouTube')
         self.url = url
         self.subtitles = {}
