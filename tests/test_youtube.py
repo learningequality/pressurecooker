@@ -1,3 +1,10 @@
+import os
+import shutil
+import tempfile
+
+import pytest
+
+from pressurecooker import utils
 from pressurecooker import youtube
 
 trees = {}
@@ -49,8 +56,47 @@ def test_cc_no_warnings():
         assert 'no_license_specified' in issue['warnings']
 
 
+def test_download_youtube_video():
+    download_dir = tempfile.mkdtemp()
+
+    try:
+        yt_resource = get_yt_resource(subtitles_video)
+        info = yt_resource.download(base_path=download_dir)
+        assert info
+        if info:
+            assert 'filename' in info
+            assert os.path.exists(info['filename']), 'Filename {} does not exist'.format(info['filename'])
+
+    finally:
+        shutil.rmtree(download_dir)
+
+
+def test_download_youtube_playlist():
+    download_dir = tempfile.mkdtemp()
+
+    try:
+        yt_resource = get_yt_resource(cc_playlist)
+        info = yt_resource.download(base_path=download_dir)
+        assert info
+        if info:
+            assert not 'filename' in info
+            assert 'children' in info
+            for child in info['children']:
+                assert 'filename' in child
+                assert os.path.exists(child['filename']), 'Filename {} does not exist'.format(child['filename'])
+
+    finally:
+        shutil.rmtree(download_dir)
+
+
 def test_get_subtitles():
     yt_resource = get_yt_resource(subtitles_video)
     info = yt_resource.get_resource_subtitles()
     assert len(info['subtitles']) == 1
     assert 'ru' in info['subtitles']
+
+
+def test_non_youtube_url_error():
+    url = 'https://vimeo.com/238190750'
+    with pytest.raises(utils.VideoURLFormatError):
+        youtube.YouTubeResource(url)

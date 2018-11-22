@@ -1,6 +1,15 @@
+import copy
+import logging
+import os
 import sys
+import time
 
 import youtube_dl
+
+from . import utils
+
+LOGGER = logging.getLogger("YouTubeResource")
+
 
 
 def get_youtube_info(youtube_url):
@@ -26,32 +35,95 @@ class YouTubeResource:
 
         :param url: URL of a YouTube resource. URL may point to a video, playlist or channel.
         """
-        self.url = url
-        self.resource_info = {}
-        self.subtitles = {}
 
+        if not 'youtube.com' in url:
+            raise utils.VideoURLFormatError(url, 'YouTube')
+        self.url = url
+        self.subtitles = {}
+        self.num_retries = 3
+        self.preferred_formats = {
+            'video': 'mp4',
+            'audio': 'm4a'
+        }
         self.get_resource_info()
 
-    def get_resource_info(self, refresh=False):
+    def get_resource_info(self, filter=True, download_dir=None):
         """
         This method checks the YouTube URL, then returns a dictionary object with info about the video(s) in it.
 
-        :param refresh: If True, re-downloads the information if it already exists. Defaults to False.
+        :param download_dir: If set, downloads videos to the specified directory. Defaults to None.
 
         :return: A dictionary object containing information about the channel, playlist or video.
         """
 
-        if len(self.resource_info) > 0 and not refresh:
-            return self.resource_info
-
-        client = youtube_dl.YoutubeDL(dict(verbose=True, no_warnings=True))
-        results = client.extract_info(self.url, download=False, process=True)
+        options = dict(
+            verbose = True,
+            no_warnings = True,
+            outtmpl = '{}/%(id)s.%(ext)s'.format(download_dir),
+            # by default, YouTubeDL will pick what it determines to be the best formats, but for consistency's sake
+            # we want to always get preferred formats (default of mp4 and m4a) when possible.
+            # TODO: Add customization for video dimensions
+            format = "bestvideo[height<=720][ext={}]+bestaudio[ext={}]/best[height<=720][ext={}]".format(
+                self.preferred_formats['video'], self.preferred_formats['audio'], self.preferred_formats['video']
+            ),
+            writethumbnail = download_dir is not None
+        )
+        LOGGER.info("Download options = {}".format(options))
+        client = youtube_dl.YoutubeDL(options)
+        results = client.extract_info(self.url, download=(download_dir is not None), process=True)
 
         keys = list(results.keys())
         keys.sort()
-        self.resource_info = self._format_for_ricecooker(results)
+        if not filter:
+            return results
 
-        return self.resource_info
+        edited_results = self._format_for_ricecooker(results)
+
+        edited_keys = list(edited_results.keys())
+        edited_keys.sort()
+
+        return edited_results
+
+    def get_dir_name_from_url(self, url=None):
+        """
+        Takes a URL and returns a directory name to store files in.
+
+        :param url: URL of a YouTube resource, if None, defaults to the url passed to the YouTubeResource object
+        :return: (String) directory name
+        """
+        if url is None:
+            url = self.url
+        name = url.split("/")[-1]
+        name = name.split("?")[0]
+        return " ".join(name.split("_")).title()
+
+    def download(self, base_path=None):
+        download_dir = utils.make_dir_if_needed(os.path.join(base_path, self.get_dir_name_from_url()))
+        LOGGER.debug("download_dir = {}".format(download_dir))
+        for i in range(self.num_retries):
+            try:
+                info = self.get_resource_info(filter=True, download_dir=download_dir)
+                if 'children' in info:
+                    for child in info['children']:
+                        child['filename'] = os.path.join(download_dir, "{}.{}".format(child["id"], child['ext']))
+                else:
+                    info['filename'] =  os.path.join(download_dir, "{}.{}".format(info["id"], info['ext']))
+                return info
+            except (youtube_dl.utils.DownloadError, youtube_dl.utils.ContentTooShortError,
+                    youtube_dl.utils.ExtractorError, OSError) as e:
+                LOGGER.info("    + An error ocurred, may be the video is not available.")
+                print("YouTube error")
+                break
+            except (ValueError, IOError, OSError) as e:
+                LOGGER.info(e)
+                LOGGER.info("Download retry")
+                sleep_seconds = .5
+                time.sleep(sleep_seconds)
+            except OSError:
+                print("OS Error")
+                break
+
+        return None
 
     def get_resource_subtitles(self):
         """
@@ -79,6 +151,7 @@ class YouTubeResource:
             'id': '',
             'title': '',
             'description': '',
+            'ext': 'mp4',
             'thumbnail': '',
             'webpage_url': '',
             'tags': [],
@@ -119,12 +192,13 @@ class YouTubeResource:
 
         :return: A tuple containing a list of videos with waranings, and the resource info as a dictionary object.
         """
-        output_video_info = self.resource_info
+        resource_info = self.get_resource_info()
+        output_video_info = copy.copy(resource_info)
         videos_with_warnings = []
         if filter:
             output_video_info['children'] = []
 
-        for video in self.resource_info['children']:
+        for video in resource_info['children']:
             warnings = []
             if not video['license']:
                 warnings.append('no_license_specified')
@@ -146,11 +220,19 @@ if __name__ == "__main__":
         check = True
 
     url = sys.argv[1]
+    download_dir = None
+    if len(sys.argv) > 2:
+        download_dir = os.path.abspath(sys.argv[2])
+    print("Download_dir = {}".format(download_dir))
     yt_resource = YouTubeResource(url)
-    info = yt_resource.get_resource_info()
-    if check:
-        warnings, out_info = yt_resource.check_for_content_issues()
-        for warning in warnings:
-            print('Video {} has the following issues: {}'.format(warning['video']['title'], warning['warnings']))
+    if download_dir is not None:
+        print("Downloading videos...")
+        yt_resource.download(base_path=download_dir)
     else:
-        print(info)
+        info = yt_resource.get_resource_info(download_dir=download_dir)
+        if check:
+            warnings, out_info = yt_resource.check_for_content_issues()
+            for warning in warnings:
+                print('Video {} has the following issues: {}'.format(warning['video']['title'], warning['warnings']))
+        else:
+            print(info)
