@@ -13,6 +13,7 @@ yt_resources = {}
 cc_playlist = 'https://www.youtube.com/playlist?list=PL7m903CwFUgntbjkVMwts89fZq0INCtVS'
 non_cc_playlist = 'https://www.youtube.com/playlist?list=PLBO8M-O_dTPE51ymDUgilf8DclGAEg9_A'
 subtitles_video = 'https://www.youtube.com/watch?v=6uXAbJQoZlE'
+subtitles_zu_video = 'https://www.youtube.com/watch?v=FN12ty5ztAs'
 
 
 def get_yt_resource(url):
@@ -100,3 +101,40 @@ def test_non_youtube_url_error():
     url = 'https://vimeo.com/238190750'
     with pytest.raises(utils.VideoURLFormatError):
         youtube.YouTubeResource(url)
+
+
+def test_subtitles_lang_helpers_compatible():
+    """
+    Usage examples functions `is_youtube_subtitle_file_supported_language` and
+    `_get_language_with_alpha2_fallback` that deal with language codes.
+    """
+    yt_resource = get_yt_resource(subtitles_zu_video)
+    info = yt_resource.get_resource_subtitles()
+    all_subtitles = info['subtitles']
+
+    # 1. filter out non-vtt subs
+    vtt_subtitles = {}
+    for youtube_language, subs in all_subtitles.items():
+        vtt_subtitles[youtube_language] = [s for s in subs if s['ext'] == 'vtt']
+
+    for youtube_language, sub_dict in vtt_subtitles.items():
+        # 2. check compatibility with le-utils language codes (a.k.a. internal representation)
+        verdict = youtube.is_youtube_subtitle_file_supported_language(youtube_language)
+        assert verdict == True, 'Wrongly marked youtube_language as incompatible'
+        # 3. TODO: figure out what to do for incompatible langs
+
+        # 4. map youtube_language to le-utils language code (a.k.a. internal representation)
+        language_obj = youtube.get_language_with_alpha2_fallback(youtube_language)
+        assert language_obj is not None, 'Failed to find matchin language code in le-utils'
+        if youtube_language == 'zu':
+            assert language_obj.code == 'zul', 'Matched to wrong language code in le-utils'
+
+
+def test_subtitles_lang_helpers_incompatible():
+    """
+    Ensure `is_youtube_subtitle_file_supported_language` rejects unknown language codes.
+    """
+    verdict1 = youtube.is_youtube_subtitle_file_supported_language('patapata')
+    assert verdict1 == False, 'Failed to reject incompatible youtube_language'
+    verdict2 = youtube.is_youtube_subtitle_file_supported_language('zzz')
+    assert verdict2 == False, 'Failed to reject incompatible youtube_language'

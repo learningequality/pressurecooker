@@ -4,6 +4,8 @@ import os
 import sys
 import time
 
+from le_utils.constants import languages
+
 import youtube_dl
 
 from . import utils
@@ -211,6 +213,41 @@ class YouTubeResource:
                 output_video_info['children'].append(video)
 
         return videos_with_warnings, output_video_info
+
+
+
+def get_language_with_alpha2_fallback(language_code):
+    """
+    Lookup language code `language_code` (string) in the internal language codes,
+    and if that fails, try to map map `language_code` to the internal represention
+    using the `getlang_by_alpha2` helper method.
+    Returns either a le-utils Language object or None if both lookups fail.
+    """
+    # 1. try to lookup `language` using internal representation
+    language_obj = languages.getlang(language_code)
+    # if language_obj not None, we know `language` is a valid language_id in the internal repr.
+    if language_obj is None:
+        # 2. try to match by two-letter ISO code
+        language_obj = languages.getlang_by_alpha2(language_code)
+    return language_obj
+
+
+def is_youtube_subtitle_file_supported_language(language):
+    """
+    Check if the language code `language` (string) is a valid language code in the
+    internal language id format `{primary_code}` or `{primary_code}-{subcode}`
+    ot alternatively if it s YouTube language code that can be mapped to one of
+    the languages in the internal represention.
+    """
+    language_obj = get_language_with_alpha2_fallback(language)
+    if language_obj is None:
+        print('Found unsupported language code {}'.format(language))
+        return False
+    else:
+        return True
+
+
+
 
 
 if __name__ == "__main__":
