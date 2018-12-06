@@ -3,6 +3,7 @@ import shutil
 import tempfile
 
 import pytest
+IS_TRAVIS_TESTING = "TRAVIS" in os.environ and os.environ["TRAVIS"] == "true"
 
 from pressurecooker import utils
 from pressurecooker import youtube
@@ -57,6 +58,7 @@ def test_cc_no_warnings():
         assert 'no_license_specified' in issue['warnings']
 
 
+@pytest.mark.skipif(IS_TRAVIS_TESTING, reason="Skipping download tests on Travis.")
 def test_download_youtube_video():
     download_dir = tempfile.mkdtemp()
 
@@ -72,6 +74,7 @@ def test_download_youtube_video():
         shutil.rmtree(download_dir)
 
 
+@pytest.mark.skipif(IS_TRAVIS_TESTING, reason="Skipping download tests on Travis.")
 def test_download_youtube_playlist():
     download_dir = tempfile.mkdtemp()
 
