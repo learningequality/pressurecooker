@@ -96,8 +96,9 @@ def test_download_youtube_playlist():
 def test_get_subtitles():
     yt_resource = get_yt_resource(subtitles_video)
     info = yt_resource.get_resource_subtitles()
-    assert len(info['subtitles']) == 1
+    assert len(info['subtitles']) == 2
     assert 'ru' in info['subtitles']
+    assert 'en' in info['subtitles']
 
 
 def test_non_youtube_url_error():
