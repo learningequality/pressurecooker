@@ -11,9 +11,9 @@ requirements = [
     "beautifulsoup4>=4.6.3",
     "ffmpy>=0.2.2",
     "le-utils>=0.1.14",
-    "matplotlib==2.0.0",
-    "numpy>=1.15.4",
-    "Pillow>=3.3.1",
+    "matplotlib==2.2.3",    # the last with py27 support
+    "numpy==1.15.4",        # pinned to avoid surprizes
+    "Pillow==5.4.1",        # pinned to avoid surprizes
     "youtube-dl>=2018.11.7",
     "Wand==0.4.4",
 ]
