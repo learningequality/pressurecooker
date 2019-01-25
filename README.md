@@ -9,3 +9,5 @@ A library of various media processing functions and utilities
 * [Install ImageMagick](https://www.imagemagick.org/) if you don't have it already. (If you are running Windows, you will need to add a `MAGICK_HOME` environment variable that points to your ImageMagick directory)
 
 * [Install GhostScript](https://www.ghostscript.com/) if you don't have it already.
+
+* [Install poppler-utils](https://poppler.freedesktop.org/) if you don't have it already
