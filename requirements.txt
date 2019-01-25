@@ -5,6 +5,5 @@ matplotlib==2.2.3
 numpy==1.15.4
 Pillow==5.4.1
 youtube-dl>=2018.11.7
-Wand==0.4.4
+pdf2image>=1.4.0
 webvtt-py>=0.4.2
-
