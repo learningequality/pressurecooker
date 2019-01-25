@@ -15,7 +15,7 @@ requirements = [
     "numpy==1.15.4",        # pinned to avoid surprizes
     "Pillow==5.4.1",        # pinned to avoid surprizes
     "youtube-dl>=2018.11.7",
-    "Wand==0.4.4",
+    "pdf2image>=1.4.0",
 ]
 
 py3only_requirements = {

@@ -18,8 +18,8 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+from pdf2image import convert_from_path
 from PIL import Image, ImageOps
-from wand.image import Image as pdfImage # Must also have imagemagick and ghostscript installed
 
 def create_tiled_image(source_images, fpath_out):
     """
@@ -50,16 +50,13 @@ def create_tiled_image(source_images, fpath_out):
         y_index += 1
     new_im.save(fpath_out)
 
-def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0, position='north'):
+def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
     """
     Create an image from the pdf at fpath_in and write result to fpath_out.
-    position options: 'forget', 'north_west', 'north', 'north_east', 'west', 'center', 'east', 'south_west', 'south', 'south_east', 'static'
     """
     assert fpath_in.endswith('pdf'), "File must be in pdf format"
-    with pdfImage(filename="{}[{}]".format(fpath_in, page_number)) as img:
-        size = min(img.width, img.height)
-        img.crop(width=size, height=size, gravity=position)
-        img.save(filename=fpath_out)
+    pages = convert_from_path(fpath_in, 500, first_page=page_number, last_page=page_number+1)
+    pages[0].save(fpath_out, 'PNG')
 
 
 def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_options=None):
