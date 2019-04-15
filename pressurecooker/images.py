@@ -86,7 +86,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
 
         #Extract Raw Audio from Wav File
         signal = spf.readframes(-1)
-        signal = np.fromstring(signal, 'Int16')
+        signal = np.frombuffer(signal, 'Int16')
 
         # Get subarray from middle
         length = len(signal)
