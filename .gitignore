@@ -98,3 +98,6 @@ ENV/
 
 # PyPI credential files (template is already committed)
 .pypirc
+
+# IntelliJ IDE (PyCharm)
+.idea/
