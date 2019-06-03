@@ -39,8 +39,11 @@ def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
                                       'default=noprint_wrappers=1:nokey=1', "-loglevel", "panic", str(fpath_in)])
 
     midpoint = float(re.search("\d+\.\d+", str(result)).group()) / 2
-    command = ['ffmpeg',"-y" if overwrite else "-n", '-i', str(fpath_in), "-vcodec", "png", "-nostats",
+    # scale parameters are from https://trac.ffmpeg.org/wiki/Scaling
+    scale = "scale=160:90:force_original_aspect_ratio=decrease,pad=160:90:(ow-iw)/2:(oh-ih)/2"
+    command = ['ffmpeg',"-y" if overwrite else "-n", '-i', str(fpath_in), "-vf", scale, "-vcodec", "png", "-nostats",
               '-ss', str(midpoint), '-vframes', '1', '-q:v', '2', "-loglevel", "panic", str(fpath_out)]
+
     subprocess.call(command)
 
 
