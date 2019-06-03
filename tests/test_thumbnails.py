@@ -32,4 +32,17 @@ class Test_wavefile_thumbnail_generation:
 
         # TODO: Store the expected output and compare the contents to the generated file?
 
+class Test_pdf_thumbnail_generation:
+    def test_generates_16_9_thumbnail(self, tmpdir):
+        input_file = os.path.join(files_dir, "demo.pdf")
+        assert os.path.exists(input_file)
+        thumbnail_name = "pdf.png"
 
+        output_path = tmpdir.join(thumbnail_name)
+        output_file = output_path.strpath
+        images.create_image_from_pdf_page(input_file, output_file)
+
+        assert os.path.exists(output_file)
+        im = PIL.Image.open(output_file)
+        width, height = im.size
+        assert float(width)/float(height) == 16.0/9.0
