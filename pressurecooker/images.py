@@ -22,6 +22,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from pdf2image import convert_from_path
 from PIL import Image, ImageOps
 
+THUMBNAIL_SIZE = (400, 225) # 16:9
+
 def create_tiled_image(source_images, fpath_out):
     """
     Create a tiled image from list of image paths provided in source_images and
@@ -58,8 +60,7 @@ def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
     assert fpath_in.endswith('pdf'), "File must be in pdf format"
     pages = convert_from_path(fpath_in, 500, first_page=page_number, last_page=page_number+1)
     page = pages[0]
-    CONTENT_THUMB_SIZE = (160,90)
-    book_thumb = scale_and_crop(page, CONTENT_THUMB_SIZE, crop="smart", zoom=10)
+    book_thumb = scale_and_crop(page, THUMBNAIL_SIZE, crop="smart", zoom=10)
     book_thumb.save(fpath_out, 'PNG')
 
 
@@ -104,7 +105,8 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         ymin, ymax = ylim = -max_y_axis, max_y_axis
 
         # Set up canvas according to user settings
-        figure = Figure(figsize=(1.60,0.90), dpi=100)
+        (xsize, ysize) = (THUMBNAIL_SIZE[0]/100.0, THUMBNAIL_SIZE[1]/100.0)
+        figure = Figure(figsize=(xsize, ysize), dpi=100)
         canvas = FigureCanvasAgg(figure)
         ax = figure.add_subplot(111, xlim=xlim, ylim=ylim, autoscale_on=False, frameon=False)
         ax.set_yticklabels([])
