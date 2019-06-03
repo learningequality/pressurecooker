@@ -100,7 +100,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         ymin, ymax = ylim = -max_y_axis, max_y_axis
 
         # Set up canvas according to user settings
-        figure = Figure()
+        figure = Figure(figsize=(1.60,0.90), dpi=100)
         canvas = FigureCanvasAgg(figure)
         ax = figure.add_subplot(111, xlim=xlim, ylim=ylim, autoscale_on=False, frameon=False)
         ax.set_yticklabels([])
@@ -116,7 +116,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
 
         # Plot points
         ax.plot(np.arange(count), subsignals, color)
-        ax.set_aspect('auto')
+        ax.set_aspect("auto")
 
         canvas.print_figure(fpath_out)
     finally:
