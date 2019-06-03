@@ -8,6 +8,7 @@ import requests_cache
 import subprocess
 import sys
 import tempfile
+import PIL
 
 from le_utils.constants import format_presets
 from pressurecooker import videos
@@ -110,14 +111,15 @@ PNG_MAGIC_NUMBER = b'\x89P'
 
 class Test_extract_thumbnail_from_video:
 
-    def test_returns_an_image(self, low_res_video):
+    def test_returns_a_16_9_image(self, low_res_video):
         with TempFile(suffix=".png") as pngf:
             videos.extract_thumbnail_from_video(low_res_video.name, pngf.name, overwrite=True)
             with open(pngf.name, "rb") as f:
                 f.seek(0)
                 assert f.read(2) == PNG_MAGIC_NUMBER
-
-
+            im = PIL.Image.open(pngf.name)
+            width, height = im.size
+            assert float(width)/float(height) == 16.0/9.0
 
 
 
