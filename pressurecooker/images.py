@@ -5,6 +5,7 @@ import os
 import wave
 import subprocess
 import sys
+from .smartcrop import scale_and_crop
 
 # On OS X, the default backend will fail if you are not using a Framework build of Python,
 # e.g. in a virtualenv. To avoid having to set MPLBACKEND each time we use Pressure Cooker,
@@ -56,7 +57,10 @@ def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
     """
     assert fpath_in.endswith('pdf'), "File must be in pdf format"
     pages = convert_from_path(fpath_in, 500, first_page=page_number, last_page=page_number+1)
-    pages[0].save(fpath_out, 'PNG')
+    page = pages[0]
+    CONTENT_THUMB_SIZE = (160,90)
+    book_thumb = scale_and_crop(page, CONTENT_THUMB_SIZE, crop="smart", zoom=10)
+    book_thumb.save(fpath_out, 'PNG')
 
 
 def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_options=None):
