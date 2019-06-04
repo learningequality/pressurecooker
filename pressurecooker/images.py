@@ -24,6 +24,11 @@ from PIL import Image, ImageOps
 
 THUMBNAIL_SIZE = (400, 225) # 16:9
 
+def smartcrop_thumbnail(PIL_image, **kwargs):
+    # optional arguments: zoom (crop outer X% before starting), target (center focus on point)
+    return scale_and_crop(PIL_image, THUMBNAIL_SIZE, crop="smart", upscale=True, **kwargs)
+
+
 def create_tiled_image(source_images, fpath_out):
     """
     Create a tiled image from list of image paths provided in source_images and
@@ -60,7 +65,7 @@ def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
     assert fpath_in.endswith('pdf'), "File must be in pdf format"
     pages = convert_from_path(fpath_in, 500, first_page=page_number, last_page=page_number+1)
     page = pages[0]
-    book_thumb = scale_and_crop(page, THUMBNAIL_SIZE, crop="smart", zoom=10)
+    book_thumb = smartcrop_thumbnail(page, zoom=10)
     book_thumb.save(fpath_out, 'PNG')
 
 
