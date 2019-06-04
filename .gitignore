@@ -101,3 +101,5 @@ ENV/
 
 # IntelliJ IDE (PyCharm)
 .idea/
+
+*.swp
