@@ -2,6 +2,7 @@ import math
 import re
 from PIL import Image
 import sys
+import types
 
 # Useful for very coarse version differentiation.
 PY2 = sys.version_info[0] == 2
