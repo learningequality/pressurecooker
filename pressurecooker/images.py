@@ -5,7 +5,10 @@ import os
 import wave
 import subprocess
 import sys
+import zipfile
+from io import BytesIO
 from .thumbscropping import scale_and_crop
+from le_utils.constants import file_formats
 
 # On OS X, the default backend will fail if you are not using a Framework build of Python,
 # e.g. in a virtualenv. To avoid having to set MPLBACKEND each time we use Pressure Cooker,
@@ -27,6 +30,32 @@ THUMBNAIL_SIZE = (400, 225) # 16:9
 def smartcrop_thumbnail(PIL_image, **kwargs):
     # optional arguments: zoom (crop outer X% before starting), target (center focus on point)
     return scale_and_crop(PIL_image, THUMBNAIL_SIZE, crop="smart", upscale=True, **kwargs)
+
+def get_image_from_zip(htmlfile, fpath_out):
+    biggest_name = None
+    size = 0
+    with zipfile.ZipFile(htmlfile, 'r') as zf:
+        valid_exts = [file_formats.PNG, file_formats.JPEG, file_formats.JPG]
+        valid_files = filter(lambda f: os.path.splitext(f)[1][1:] in valid_exts, zf.namelist())
+        # get the biggest (most pixels) image in the zip.
+        for filename in valid_files:
+            _, ext = os.path.splitext(filename)
+            with zf.open(filename) as fhandle:
+                image_data = fhandle.read()
+            with BytesIO(image_data) as bhandle:
+                img = Image.open(bhandle)
+                img_size = img.size[0] * img.size[1]
+                if img_size > size:
+                    biggest_name = filename
+                    size = img_size
+        if not biggest_name:
+            return None  # this zip has no images
+        with zf.open(biggest_name) as fhandle:
+            image_data = fhandle.read()
+            with BytesIO(image_data) as bhandle:
+                img = Image.open(bhandle)
+                thumb = smartcrop_thumbnail(img) # ensure 16:9
+                thumb.save(fpath_out)
 
 
 def create_tiled_image(source_images, fpath_out):
