@@ -26,9 +26,9 @@ from PIL import Image, ImageOps
 
 THUMBNAIL_SIZE = (400, 225) # 16:9
 
-def smartcrop_thumbnail(PIL_image, **kwargs):
+def smartcrop_thumbnail(PIL_image, size=THUMBNAIL_SIZE,**kwargs):
     # optional arguments: zoom (crop outer X% before starting), target (center focus on point)
-    return scale_and_crop(PIL_image, THUMBNAIL_SIZE, crop="smart", upscale=True, **kwargs)
+    return scale_and_crop(PIL_image, size, crop="smart", upscale=True, **kwargs)
 
 def get_image_from_zip(htmlfile, fpath_out):
     biggest_name = None
@@ -62,28 +62,23 @@ def create_tiled_image(source_images, fpath_out):
     Create a tiled image from list of image paths provided in source_images and
     write result to fpath_out.
     """
-    root = math.sqrt(len(source_images))
-    assert len(source_images) > 0, "Must provide at least one image to tile"
-    assert int(root + 0.5) ** 2 == len(source_images), "Number of images must be a perfect square"
+
+    sizes = {1:1, 4:2, 9:3, 16:4, 25:5, 36:6, 49:7}
+    assert len(source_images) in sizes.keys(), "Number of images must be a perfect square <= 49"
+    root = sizes[len(source_images)]
 
     images = list(map(Image.open, source_images))
-    widths, heights = zip(*(i.size for i in images))
+    new_im = Image.new('RGB', THUMBNAIL_SIZE)
+    offset = (int(float(THUMBNAIL_SIZE[0]) / float(root)),
+              int(float(THUMBNAIL_SIZE[1]) / float(root)) )
 
-    max_dimension = int(min(max(widths), max(heights)))
-    offset = int(max_dimension / int(root))
-
-    new_im = Image.new('RGB', (max_dimension, max_dimension))
-
-    index = x_index = y_index = 0
-    root = int(root)
-    while y_index < root and index < len(images):
-        x_index = 0
-        while x_index < root and index < len(images):
-            im = ImageOps.fit(images[index], (int(offset), int(offset)), Image.ANTIALIAS)
-            new_im.paste(im, (int(offset * x_index), int(offset * y_index)))
-            x_index += 1
-            index += 1
-        y_index += 1
+    index = 0
+    for y_index in range(root):
+        for x_index in range(root):
+            im = smartcrop_thumbnail(images[index], size=offset)
+#            im = ImageOps.fit(images[index], offset, Image.ANTIALIAS)
+            new_im.paste(im, (int(offset[0] * x_index), int(offset[1] * y_index)))
+            index = index + 1
     new_im.save(fpath_out)
 
 def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
