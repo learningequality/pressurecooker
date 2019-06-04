@@ -6,6 +6,8 @@ import wave
 import subprocess
 import sys
 import zipfile
+import ebooklib
+import ebooklib.epub
 from io import BytesIO
 from .thumbscropping import scale_and_crop
 from le_utils.constants import file_formats
@@ -30,6 +32,17 @@ THUMBNAIL_SIZE = (400, 225) # 16:9
 def smartcrop_thumbnail(PIL_image, size=THUMBNAIL_SIZE,**kwargs):
     # optional arguments: zoom (crop outer X% before starting), target (center focus on point)
     return scale_and_crop(PIL_image, size, crop="smart", upscale=True, **kwargs)
+
+def get_image_from_ebook(ebookfile, fpath_out):
+    book = ebooklib.epub.read_epub(ebookfile)
+    images = list(book.get_items_of_type(ebooklib.ITEM_IMAGE))
+    if not images:
+        return
+    image_data = BytesIO(images[0].get_content())
+    image_name = images[0].get_name()
+    im = Image.open(image_data)
+    im = smartcrop_thumbnail(im)
+    im.save(fpath_out)
 
 def get_image_from_zip(htmlfile, fpath_out):
     biggest_name = None

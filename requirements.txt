@@ -7,3 +7,4 @@ Pillow==5.4.1
 youtube-dl>=2018.11.7
 pdf2image>=1.4.0
 webvtt-py>=0.4.2
+git+https://github.com/aerkalov/ebooklib#egg=ebooklib
