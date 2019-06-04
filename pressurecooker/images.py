@@ -5,7 +5,7 @@ import os
 import wave
 import subprocess
 import sys
-from .smartcrop import scale_and_crop
+from .thumbscropping import scale_and_crop
 
 # On OS X, the default backend will fail if you are not using a Framework build of Python,
 # e.g. in a virtualenv. To avoid having to set MPLBACKEND each time we use Pressure Cooker,
