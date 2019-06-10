@@ -1,11 +1,7 @@
 import re
 import subprocess
-import tempfile
 
-from ffmpy import FFmpeg
 from le_utils.constants import format_presets
-
-
 
 
 def guess_video_preset_by_resolution(videopath):
@@ -42,7 +38,6 @@ def extract_thumbnail_from_video(fpath_in, fpath_out, overwrite=False):
     command = ['ffmpeg',"-y" if overwrite else "-n", '-i', str(fpath_in), "-vcodec", "png", "-nostats",
               '-ss', str(midpoint), '-vframes', '1', '-q:v', '2', "-loglevel", "panic", str(fpath_out)]
     subprocess.call(command)
-
 
 
 class VideoCompressionError(Exception):

@@ -10,18 +10,15 @@ with open('README.md') as readme_file:
 requirements = [
     "beautifulsoup4>=4.6.3",
     "ffmpy>=0.2.2",
+    # TODO: update le-utils to 0.1.19
     "le-utils>=0.1.14",
     "matplotlib==2.2.3",    # the last with py27 support
     "numpy==1.15.4",        # pinned to avoid surprizes
     "Pillow==5.4.1",        # pinned to avoid surprizes
     "youtube-dl>=2018.11.7",
     "pdf2image>=1.4.0",
+    "pycaption @ git+https://github.com/learningequality/pycaption@2.0.0-alpha",
 ]
-
-py3only_requirements = {
-    ':python_version>="3.4"': ['webvtt-py>=0.4.2']
-}
-
 
 test_requirements = [
     # TODO: put package test requirements here
@@ -40,7 +37,6 @@ setup(
                  'presurecooker'},
     include_package_data=True,
     install_requires=requirements,
-    extras_require=py3only_requirements,
     license="MIT license",
     zip_safe=False,
     keywords=['media', 'mediaprocessing', 'video',

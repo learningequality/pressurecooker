@@ -1,28 +1,80 @@
-import hashlib
 import os
-import pytest
-import sys
+import hashlib
+import tempfile
+from unittest import TestCase
+from pressurecooker.converters import convert_subtitles
+from pressurecooker.subtitles import InvalidSubtitleFormatError
+from pressurecooker.subtitles import InvalidSubtitleLanguageError
+from le_utils.constants import languages, file_formats
+
+test_files_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'files', 'subtitles')
 
 
-test_dir = os.path.dirname(__file__)
-
-@pytest.mark.skipif(sys.version_info < (3,0), reason="The webvtt lib is py3 only")
-def test_srt2vtt():
-    from pressurecooker import converters  # moved here to avoid importing on py2.7
-    def get_hash_file(path):
+class SubtitleConverterTest(TestCase):
+    def get_file_hash(self, path):
         hash = hashlib.md5()
         with open(path, 'rb') as fobj:
             for chunk in iter(lambda: fobj.read(2097152), b""):
                 hash.update(chunk)
-            return hash
 
-    original_vtt = os.path.abspath(os.path.join(test_dir, "files", "original.vtt"))
-    original_srt = os.path.abspath(os.path.join(test_dir, "files", "original.srt"))
+        return hash.hexdigest()
 
-    resulting_vtt = "/tmp/test_vtt.vtt"
-    converters.srt2vtt(original_srt, resulting_vtt)
-    original_vtt_hash = get_hash_file(original_vtt)
-    resulting_vtt_hash = get_hash_file(resulting_vtt)
+    def assertFileHashesEqual(self, expected_file, actual_file):
+        expected_hash = self.get_file_hash(expected_file)
+        actual_hash = self.get_file_hash(actual_file)
+        self.assertEqual(expected_hash, actual_hash)
 
-    assert original_vtt_hash.hexdigest() == resulting_vtt_hash.hexdigest()
+    def test_srt_conversion(self):
+        expected_file = os.path.join(test_files_dir, 'basic.vtt')
+        expected_language = languages.getlang_by_name('Arabic')
 
+        with tempfile.NamedTemporaryFile() as actual_file:
+            convert_subtitles(os.path.join(test_files_dir, 'basic.srt'), actual_file.name,
+                              expected_language.code)
+            self.assertFileHashesEqual(expected_file, actual_file.name)
+
+    def test_expected_srt_conversion(self):
+        expected_format = file_formats.SRT
+        expected_file = os.path.join(test_files_dir, 'basic.vtt')
+        expected_language = languages.getlang_by_name('Arabic')
+
+        with tempfile.NamedTemporaryFile() as actual_file:
+            convert_subtitles(os.path.join(test_files_dir, 'basic.srt'), actual_file.name,
+                              expected_language.code, expected_format)
+            self.assertFileHashesEqual(expected_file, actual_file.name)
+
+    def test_not_expected_type(self):
+        # TODO: update le-utils to 0.1.19
+        # expected_format = file_formats.SCC
+        expected_format = "scc"
+        expected_language = languages.getlang_by_name('Arabic')
+
+        with tempfile.NamedTemporaryFile() as actual_file,\
+                self.assertRaises(InvalidSubtitleFormatError):
+            convert_subtitles(os.path.join(test_files_dir, 'basic.srt'),
+                              actual_file.name, expected_language.code, expected_format)
+
+    def test_invalid_format(self):
+        expected_language = languages.getlang_by_name('English')
+
+        with tempfile.NamedTemporaryFile() as actual_file,\
+                self.assertRaises(InvalidSubtitleFormatError):
+            convert_subtitles(os.path.join(test_files_dir, 'not.txt'), actual_file.name,
+                              expected_language.code)
+
+    def test_valid_language(self):
+        expected_file = os.path.join(test_files_dir, 'encapsulated.vtt')
+        expected_language = languages.getlang_by_name('English')
+
+        with tempfile.NamedTemporaryFile() as actual_file:
+            convert_subtitles(os.path.join(test_files_dir, 'encapsulated.sami'), actual_file.name,
+                              expected_language.code)
+            self.assertFileHashesEqual(expected_file, actual_file.name)
+
+    def test_invalid_language(self):
+        expected_language = languages.getlang_by_name('Spanish')
+
+        with self.assertRaises(InvalidSubtitleLanguageError),\
+                tempfile.NamedTemporaryFile() as actual_file:
+            convert_subtitles(os.path.join(test_files_dir, 'encapsulated.sami'), actual_file.name,
+                              expected_language.code)
