@@ -17,7 +17,7 @@ requirements = [
     "Pillow==5.4.1",        # pinned to avoid surprizes
     "youtube-dl>=2018.11.7",
     "pdf2image>=1.4.0",
-    "pycaption @ git+https://github.com/learningequality/pycaption@2.0.0-alpha",
+    "le-pycaption>=2.0.0a0",
 ]
 
 test_requirements = [
