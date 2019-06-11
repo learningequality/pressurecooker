@@ -27,15 +27,10 @@ def build_vtt_reader():
 BUILD_READER_MAP = {
     file_formats.VTT: build_vtt_reader,
     file_formats.SRT: build_srt_reader,
-    # TODO: update le-utils to 0.1.19
-    # file_formats.SAMI: SAMIReader,
-    # file_formats.SCC: SCCReader,
-    # file_formats.TTML: DFXPReader,
-    # file_formats.DFXP: DFXPReader,
-    'sami': build_sami_reader,
-    'scc': build_scc_reader,
-    'ttml': build_dfxp_reader, # ttml == dfxp
-    'dfxp': build_dfxp_reader,
+    file_formats.SAMI: build_sami_reader,
+    file_formats.SCC: build_scc_reader,
+    file_formats.TTML: build_dfxp_reader,
+    file_formats.DFXP: build_dfxp_reader,
 }
 
 

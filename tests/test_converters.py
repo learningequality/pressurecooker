@@ -44,9 +44,7 @@ class SubtitleConverterTest(TestCase):
             self.assertFileHashesEqual(expected_file, actual_file.name)
 
     def test_not_expected_type(self):
-        # TODO: update le-utils to 0.1.19
-        # expected_format = file_formats.SCC
-        expected_format = "scc"
+        expected_format = file_formats.SCC
         expected_language = languages.getlang_by_name('Arabic')
 
         with tempfile.NamedTemporaryFile() as actual_file,\

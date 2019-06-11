@@ -10,14 +10,13 @@ with open('README.md') as readme_file:
 requirements = [
     "beautifulsoup4>=4.6.3",
     "ffmpy>=0.2.2",
-    # TODO: update le-utils to 0.1.19
-    "le-utils>=0.1.14",
+    "le-utils>=0.1.19",
     "matplotlib==2.2.3",    # the last with py27 support
     "numpy==1.15.4",        # pinned to avoid surprizes
     "Pillow==5.4.1",        # pinned to avoid surprizes
     "youtube-dl>=2018.11.7",
     "pdf2image>=1.4.0",
-    "le-pycaption>=2.0.0a0",
+    "le-pycaption>=2.0.0a1",
 ]
 
 test_requirements = [
