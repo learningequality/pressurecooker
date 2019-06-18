@@ -133,6 +133,8 @@ class SubtitleConverter:
 
     def convert(self, in_filename, out_filename):
         """
+        Convenience method as captions contents must be unicode for conversion
+
         :param in_filename: A string path to the captions file to parse
         :param out_filename: A string path to put the converted captions contents
         :return:
@@ -140,6 +142,16 @@ class SubtitleConverter:
         with codecs.open(in_filename, encoding='utf-8') as captions_file:
             captions_str = captions_file.read()
 
+        with codecs.open(out_filename, 'w', encoding='utf-8') as converted_file:
+            converted_file.write(self.convert_str(captions_str))
+
+    def convert_str(self, captions_str):
+        """
+        :param captions_str: A string with captions to convert
+        :type: captions_str: str
+        :return: A string with the converted caption contents
+        :rtype: str
+        """
         for reader in self.readers:
             captions = reader.read(captions_str, self.lang_code)
             if captions is not None:
@@ -147,5 +159,5 @@ class SubtitleConverter:
         else:
             raise InvalidSubtitleFormatError('Subtitle file is unsupported or unreadable')
 
-        with codecs.open(out_filename, 'w', encoding='utf-8') as converted_file:
-            converted_file.write(self.writer.write(captions))
+        return self.writer.write(captions)
+

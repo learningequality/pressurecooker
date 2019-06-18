@@ -47,6 +47,26 @@ def build_subtitle_readers():
     return readers
 
 
+def build_subtitle_converter(lang_code, in_format=None):
+    """
+    Builds a subtitle converter used to convert subtitle files to VTT format
+
+    :param lang_code: A string with the language code
+    :type: lang_code: str
+    :param in_format: A string with expected format of the file to be converted
+    :type: in_format: str
+    :return: A SubtitleConverter
+    :rtype: SubtitleConverter
+    """
+    readers = []
+    if in_format is not None:
+        readers.append(build_subtitle_reader(in_format))
+    else:
+        readers = build_subtitle_readers()
+
+    return SubtitleConverter(readers, lang_code)
+
+
 def convert_subtitles(in_filename, out_filename, lang_code, in_format=None):
     """
     Converts `in_filename` to `out_filename`, where `out_filename` will be a VTT captions file
@@ -55,13 +75,6 @@ def convert_subtitles(in_filename, out_filename, lang_code, in_format=None):
     :param out_filename: A string path to put the converted captions contents
     :param lang_code: A string with the language code
     :param in_format: A string with expected format of `in_filename`, otherwise detected
-    :return:
     """
-    readers = []
-    if in_format is not None:
-        readers.append(build_subtitle_reader(in_format))
-    else:
-        readers = build_subtitle_readers()
-
-    SubtitleConverter(readers, lang_code).convert(in_filename, out_filename)
+    build_subtitle_converter(lang_code, in_format).convert(in_filename, out_filename)
 
