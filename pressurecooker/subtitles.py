@@ -1,7 +1,7 @@
-from abc import ABCMeta, abstractmethod
 import codecs
 from pycaption import CaptionSet, WebVTTWriter
-from pycaption.base import DEFAULT_LANGUAGE_CODE
+
+LANGUAGE_CODE_UNKNOWN = 'unknown'
 
 
 class InvalidSubtitleFormatError(TypeError):
@@ -18,146 +18,148 @@ class InvalidSubtitleLanguageError(ValueError):
     pass
 
 
-class SubtitleReader(ABCMeta('ABC', (object,), {})):
+class SubtitleReader:
     """
-    Base class for specifying two different types of reader functionality split based on language
-    handling
+    A wrapper class for the pycaption readers since the interface differs between all. This will
+    call read with `LANGUAGE_CODE_UNKNOWN` if `requires_language` is `True`
     """
-    def __init__(self, reader):
+    def __init__(self, reader, requires_language=False):
         """
         :param reader: A pycaption reader
         :type reader: WebVTTReader, SRTReader, SAMIReader, SCCReader, DFXPReader
+        :param requires_language: A boolean specifying whether the reader requires a language
+        :type requires_language: bool
         """
         self.reader = reader
+        self.requires_language = requires_language
 
-    def read(self, captions_str, lang_code=DEFAULT_LANGUAGE_CODE):
+    def read(self, caption_str):
         """
         Handles detecting and reading the captions
 
-        :param captions_str: A string with the captions contents
-        :param lang_code: A string representing the lang code of the file
-        :type captions_str: str
-        :type lang_code: str
+        :param caption_str: A string with the captions contents
+        :type caption_str: str
         :return: The captions from the file in a `CaptionSet` or `None` if unsupported
         :rtype: CaptionSet, None
         """
         try:
-            if not self.reader.detect(captions_str):
+            if not self.reader.detect(caption_str):
                 return None
-            return self.do_read(captions_str, lang_code)
+
+            if self.requires_language:
+                return self.reader.read(caption_str, lang=LANGUAGE_CODE_UNKNOWN)
+
+            return self.reader.read(caption_str)
         except UnicodeDecodeError:
             return None
-
-    @abstractmethod
-    def do_read(self, captions_str, lang_code):
-        """
-        :param captions_str: A string with the captions contents
-        :param lang_code: A string representing the lang code of the `captions_str`
-        :type captions_str: str
-        :type lang_code: str
-        :return: The captions a `CaptionSet` or `None` if unsupported
-        :rtype: CaptionSet
-        """
-        pass
-
-    def validate_caption_set(self, caption_set, lang_code):
-        """
-        Validates the `caption_set` is not empty. Assumes that empty means an invalid language
-
-        :param caption_set: A `CaptionSet`
-        :param lang_code:
-        :return:
-        """
-        if caption_set.is_empty():
-            raise InvalidSubtitleLanguageError(
-                "Captions set is empty for language '{}'".format(lang_code))
-
-
-class AmbiguousSubtitleReader(SubtitleReader):
-    """
-    This class handles readers that accept a language when reading, since the format may not
-    specify a language.
-    """
-    def do_read(self, captions_str, lang_code):
-        caption_set = self.reader.read(captions_str, lang=lang_code)
-        self.validate_caption_set(caption_set, lang_code)
-        return caption_set
-
-
-class EncapsulatedSubtitleReader(SubtitleReader):
-    """
-    Some subtitle formats encapsulate multiple caption sets for different languages. This class
-    handles the reading differently since the readers for those formats will not accept a language,
-    but will return a `CaptionSet` with all of the languages. We'll reduce it to the `lang_code`
-    language to ensure we're writing captions for the language we're expecting to write.
-    """
-    def do_read(self, captions_str, lang_code=None):
-        caption_set = self.new_caption_set(self.reader.read(captions_str), lang_code)
-        self.validate_caption_set(caption_set, lang_code)
-        return caption_set
-
-    def new_caption_set(self, old_caption_set, lang_code):
-        """
-        Builds a new `CaptionSet` from `old_caption_set` with only one language specified by
-        `lang_code` since caption sets can contain multiple languages
-
-        :param old_caption_set: A `CaptionSet`
-        :param lang_code: A string of the requesting language code
-        :type old_caption_set: CaptionSet
-        :type lang_code: str
-        :return: A `CaptionSet` with captions only for `lang_code`
-        :rtype: CaptionSet
-        """
-        captions = old_caption_set.get_captions(lang_code)
-        styles = old_caption_set.get_styles()
-        layout_info = old_caption_set.get_layout_info(lang_code)
-
-        return CaptionSet({lang_code: captions}, styles=dict(styles), layout_info=layout_info)
 
 
 class SubtitleConverter:
     """
     This class converts subtitle files to the preferred VTT format
     """
-    def __init__(self, readers, lang_code):
+    def __init__(self, readers, caption_str):
         """
         :param readers: An array of `SubtitleReader` instances
-        :param lang_code: A string with the language code
+        :param caption_str: A string with the captions content
         """
         self.readers = readers
-        self.lang_code = lang_code
+        self.caption_str = caption_str
         self.writer = WebVTTWriter()
         # set "video size" to 100 since other types may have layout, 100 should work to generate %
         self.writer.video_width = 100
         self.writer.video_height = self.writer.video_width * 6 / 19
+        self.caption_set = None
 
-    def convert(self, in_filename, out_filename):
+    def get_caption_set(self):
         """
-        Convenience method as captions contents must be unicode for conversion
+        Detects and reads the `caption_str` into the cached `caption_set` property and returns it.
 
-        :param in_filename: A string path to the captions file to parse
+        :return: CaptionSet
+        """
+        if self.caption_set:
+            return self.caption_set
+
+        for reader in self.readers:
+            self.caption_set = reader.read(self.caption_str)
+            if self.caption_set is not None:
+                break
+        else:
+            self.caption_set = None
+            raise InvalidSubtitleFormatError('Subtitle file is unsupported or unreadable')
+
+        if self.caption_set.is_empty():
+            raise InvalidSubtitleLanguageError('Captions set is invalid')
+        return self.caption_set
+
+    def get_language_codes(self):
+        """
+        This gets the language codes as defined by the caption string. Some caption formats do not
+        specify languages, which in that case a special code (constant `LANGUAGE_CODE_UNKNOWN`)
+        will be present.
+
+        :return: An array of language codes as defined in the subtitle file.
+        """
+        return self.get_caption_set().get_languages()
+
+    def has_language(self, lang_code):
+        """
+        Determines if current caption set to be converted is/has an unknown language. This would
+        happen with SRT or other files where language is not specified
+
+        :param: lang_code: A string of the language code to check
+        :return: bool
+        """
+        return lang_code in self.get_language_codes()
+
+    def replace_unknown_language(self, lang_code):
+        """
+        This essentially sets the "unknown" language in the caption set, by replacing the key
+        with this new language code
+
+        :param lang_code: A string with the language code to replace the unknown language with
+        """
+        caption_set = self.get_caption_set()
+
+        captions = {}
+        for lang in caption_set.get_languages():
+            set_lang = lang_code if lang == LANGUAGE_CODE_UNKNOWN else lang
+            captions[set_lang] = caption_set.get_captions(lang)
+
+        # Replace caption_set with new version, having replaced unknown language
+        self.caption_set = CaptionSet(
+            captions, styles=dict(caption_set.get_styles()), layout_info=caption_set.layout_info)
+
+    def write(self, out_filename, lang_code):
+        """
+        Convenience method to write captions as file. Captions contents must be unicode for
+        conversion.
+
         :param out_filename: A string path to put the converted captions contents
-        :return:
+        :param lang_code: A string of the language code to write
         """
-        with codecs.open(in_filename, encoding='utf-8') as captions_file:
-            captions_str = captions_file.read()
-
         with codecs.open(out_filename, 'w', encoding='utf-8') as converted_file:
-            converted_file.write(self.convert_str(captions_str))
+            converted_file.write(self.convert(lang_code))
 
-    def convert_str(self, captions_str):
+    def convert(self, lang_code):
         """
-        :param captions_str: A string with captions to convert
-        :type: captions_str: str
+        Converts the caption set to the VTT format
+
+        :param lang_code: A string with one of the languages to output the captions for
+        :type: lang_code: str
         :return: A string with the converted caption contents
         :rtype: str
         """
-        for reader in self.readers:
-            captions = reader.read(captions_str, self.lang_code)
-            if captions is not None:
-                break
-        else:
-            raise InvalidSubtitleFormatError('Subtitle file is unsupported or unreadable')
+        caption_set = self.get_caption_set()
+        captions = caption_set.get_captions(lang_code)
 
-        return self.writer.write(captions)
+        if not captions:
+            raise InvalidSubtitleLanguageError(
+                "Language '{}' is not present in caption set".format(lang_code))
+
+        styles = caption_set.get_styles()
+        layout_info = caption_set.get_layout_info(lang_code)
+        lang_caption_set = CaptionSet(
+            {lang_code: captions}, styles=dict(styles), layout_info=layout_info)
+        return self.writer.write(lang_caption_set)
 
