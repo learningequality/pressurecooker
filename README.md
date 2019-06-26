@@ -80,9 +80,6 @@ output = converter.convert('en')
 
 A fuller example that could handle the other DFXP, SAMI, and TTML formats with multiple languages
 may look like this:
-
-If you are unsure of the format, but you know the language of the file, it is safer to conditionally 
-replace the `LANGUAGE_CODE_UNKNOWN` with that language: 
 ```python
 from pressurecooker.converters import build_subtitle_converter_from_file
 from pressurecooker.subtitles import LANGUAGE_CODE_UNKNOWN, InvalidSubtitleLanguageError
