@@ -2,7 +2,7 @@ import os
 import hashlib
 import tempfile
 from unittest import TestCase
-from pressurecooker.converters import build_subtitle_converter_from_file
+from pressurecooker.subtitles import build_subtitle_converter_from_file
 from pressurecooker.subtitles import LANGUAGE_CODE_UNKNOWN
 from pressurecooker.subtitles import InvalidSubtitleFormatError
 from pressurecooker.subtitles import InvalidSubtitleLanguageError

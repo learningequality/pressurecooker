@@ -29,7 +29,7 @@ classes and functions handling conversion use the "subtitles" term.
 ### Creating the converter
 If you already have the captions loaded into a string variable, you can create the convert like so:
 ```python
-from pressurecooker.converters import build_subtitle_converter
+from pressurecooker.subtitles import build_subtitle_converter
 
 # In this example, `captions_str` holds the caption contents
 captions_str = ''
@@ -37,7 +37,7 @@ converter = build_subtitle_converter(captions_str)
 ```
 otherwise, you can load from a file:
 ```python
-from pressurecooker.converters import build_subtitle_converter_from_file
+from pressurecooker.subtitles import build_subtitle_converter_from_file
 
 converter = build_subtitle_converter_from_file('/path/to/file.srt')
 ```
@@ -51,7 +51,7 @@ content of the caption files.
 
 For the SCC, SRT, and VTT, if you are sure of the format, this is the most basic approach:
 ```python
-from pressurecooker.converters import build_subtitle_converter_from_file
+from pressurecooker.subtitles import build_subtitle_converter_from_file
 from pressurecooker.subtitles import LANGUAGE_CODE_UNKNOWN
 
 converter = build_subtitle_converter_from_file('/path/to/file.srt')
@@ -63,7 +63,7 @@ output = converter.convert(LANGUAGE_CODE_UNKNOWN)
 If you are unsure of the format, but you know the language of the file, it is safer to conditionally 
 replace the `LANGUAGE_CODE_UNKNOWN` with that language: 
 ```python
-from pressurecooker.converters import build_subtitle_converter_from_file
+from pressurecooker.subtitles import build_subtitle_converter_from_file
 from pressurecooker.subtitles import LANGUAGE_CODE_UNKNOWN, InvalidSubtitleLanguageError
 
 converter = build_subtitle_converter_from_file('/path/to/file')
@@ -81,7 +81,7 @@ output = converter.convert('en')
 A fuller example that could handle the other DFXP, SAMI, and TTML formats with multiple languages
 may look like this:
 ```python
-from pressurecooker.converters import build_subtitle_converter_from_file
+from pressurecooker.subtitles import build_subtitle_converter_from_file
 from pressurecooker.subtitles import LANGUAGE_CODE_UNKNOWN, InvalidSubtitleLanguageError
 
 converter = build_subtitle_converter_from_file('/path/to/file')
