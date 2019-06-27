@@ -1,27 +1,28 @@
+import codecs
 from pycaption import WebVTTReader, SRTReader, SAMIReader, SCCReader, DFXPReader
 from .subtitles import SubtitleConverter, InvalidSubtitleFormatError
-from .subtitles import AmbiguousSubtitleReader, EncapsulatedSubtitleReader
+from .subtitles import SubtitleReader
 from le_utils.constants import file_formats
 
 
 def build_dfxp_reader():
-    return EncapsulatedSubtitleReader(DFXPReader())
+    return SubtitleReader(DFXPReader())
 
 
 def build_sami_reader():
-    return EncapsulatedSubtitleReader(SAMIReader())
+    return SubtitleReader(SAMIReader())
 
 
 def build_scc_reader():
-    return AmbiguousSubtitleReader(SCCReader())
+    return SubtitleReader(SCCReader(), requires_language=True)
 
 
 def build_srt_reader():
-    return AmbiguousSubtitleReader(SRTReader())
+    return SubtitleReader(SRTReader(), requires_language=True)
 
 
 def build_vtt_reader():
-    return AmbiguousSubtitleReader(WebVTTReader())
+    return SubtitleReader(WebVTTReader(), requires_language=True)
 
 
 BUILD_READER_MAP = {
@@ -47,12 +48,12 @@ def build_subtitle_readers():
     return readers
 
 
-def build_subtitle_converter(lang_code, in_format=None):
+def build_subtitle_converter(caption_str, in_format=None):
     """
     Builds a subtitle converter used to convert subtitle files to VTT format
 
-    :param lang_code: A string with the language code
-    :type: lang_code: str
+    :param caption_str: A string with the captions contents
+    :type: captions_str: str
     :param in_format: A string with expected format of the file to be converted
     :type: in_format: str
     :return: A SubtitleConverter
@@ -64,17 +65,23 @@ def build_subtitle_converter(lang_code, in_format=None):
     else:
         readers = build_subtitle_readers()
 
-    return SubtitleConverter(readers, lang_code)
+    return SubtitleConverter(readers, caption_str)
 
 
-def convert_subtitles(in_filename, out_filename, lang_code, in_format=None):
+def build_subtitle_converter_from_file(captions_filename, in_format=None):
     """
-    Converts `in_filename` to `out_filename`, where `out_filename` will be a VTT captions file
+    Reads `captions_filename` as the file to be converted, and returns a `SubtitleConverter`
+    instance that can be used to do the conversion.
 
-    :param in_filename: A string path to the captions file to parse
-    :param out_filename: A string path to put the converted captions contents
-    :param lang_code: A string with the language code
-    :param in_format: A string with expected format of `in_filename`, otherwise detected
+    :param captions_filename: A string path to the captions file to parse
+    :type: captions_filename: str
+    :param in_format: A string with expected format of `captions_filename`, otherwise detected
+    :type: in_format: str
+    :return: A SubtitleConverter
+    :rtype: SubtitleConverter
     """
-    build_subtitle_converter(lang_code, in_format).convert(in_filename, out_filename)
+    with codecs.open(captions_filename, encoding='utf-8') as captions_file:
+        captions_str = captions_file.read()
+
+    return build_subtitle_converter(captions_str, in_format)
 
