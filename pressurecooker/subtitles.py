@@ -1,10 +1,11 @@
 import codecs
 from pycaption import CaptionSet, WebVTTWriter
 from pycaption import WebVTTReader, SRTReader, SAMIReader, SCCReader, DFXPReader
+from pycaption.base import DEFAULT_LANGUAGE_CODE
 from le_utils.constants import file_formats
 
 
-LANGUAGE_CODE_UNKNOWN = 'unknown'
+LANGUAGE_CODE_UNKNOWN = DEFAULT_LANGUAGE_CODE
 
 
 class InvalidSubtitleFormatError(TypeError):
