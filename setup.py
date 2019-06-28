@@ -17,6 +17,7 @@ requirements = [
     "youtube-dl>=2019.9.1",
     "pdf2image>=1.4.0",
     "le-pycaption>=2.0.0a3",
+    "EbookLib>=0.17.1",
 ]
 
 test_requirements = [
