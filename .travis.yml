@@ -17,7 +17,7 @@ before_install:
   - sudo apt-get -y -qq update
   - sudo apt-get install -y ffmpeg
   - sudo apt-get install -y libfreetype6-dev libxft-dev libwebp-dev libjpeg-dev libmagickwand-dev
-
+  - sudo apt-get install -y poppler-utils
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -U setuptools && pip install -U tox-travis
