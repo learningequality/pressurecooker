@@ -32,15 +32,39 @@ def smartcrop_thumbnail(PIL_image, size=THUMBNAIL_SIZE,**kwargs):
     # optional arguments: zoom (crop outer X% before starting), target (center focus on point)
     return scale_and_crop(PIL_image, size, crop="smart", upscale=True, **kwargs)
 
-def get_image_from_ebook(ebookfile, fpath_out):
+
+
+
+# THUMBNAILS FOR CONTENT KINDS
+################################################################################
+
+def get_image_from_ebook(ebookfile, fpath_out, smartcrop=False):
     book = ebooklib.epub.read_epub(ebookfile)
-    images = list(book.get_items_of_type(ebooklib.ITEM_IMAGE))
-    if not images:
-        return
-    image_data = BytesIO(images[0].get_content())
-    image_name = images[0].get_name()
+    
+    # 1. try to get cover image from book metadata (content.opf)
+    cover_item = None
+    covers = book.get_metadata('http://www.idpf.org/2007/opf', 'cover')
+    if covers:
+        cover_tuple = covers[0] # ~= (None, {'name':'cover', 'content':'item1'})
+        assert cover_tuple[1]['name'] == 'cover', 'wrong key name'
+        cover_item_id = cover_tuple[1]['content']
+        for item in book.items:
+            if item.id == cover_item_id:
+                cover_item = item
+    if cover_item:
+        image_data = BytesIO(cover_item.get_content())
+    else:
+        # 2. fallback to get first image in the ePub file
+        images = list(book.get_items_of_type(ebooklib.ITEM_IMAGE))
+        # TODO: get largest image of the bunch
+        if not images:
+            return
+        image_data = BytesIO(images[0].get_content())
+
+    # Save image_data to fpath_out
     im = Image.open(image_data)
-    im = smartcrop_thumbnail(im)
+    if smartcrop:
+        im = smartcrop_thumbnail(im)
     im.save(fpath_out)
 
 def get_image_from_zip(htmlfile, fpath_out):
