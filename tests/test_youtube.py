@@ -81,7 +81,7 @@ def test_download_youtube_playlist():
     try:
         yt_resource = get_yt_resource(cc_playlist)
         info = yt_resource.download(base_path=download_dir)
-        assert info
+        assert info is not None
         if info:
             assert not 'filename' in info
             assert 'children' in info
