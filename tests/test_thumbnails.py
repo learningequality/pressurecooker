@@ -61,7 +61,7 @@ class Test_wavefile_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 class Test_pdf_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
     def test_generates_thumbnail(self, tmpdir):
-        input_file = os.path.join(files_dir, "demo.pdf")
+        input_file = os.path.join(files_dir, "generate_thumbnail", "sample.pdf")
         assert os.path.exists(input_file)
         thumbnail_name = "pdf.png"
         output_path = tmpdir.join(thumbnail_name)
@@ -70,7 +70,7 @@ class Test_pdf_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         self.check_thumbnail_generated(output_file)
 
     def test_generates_16_9_thumbnail(self, tmpdir):
-        input_file = os.path.join(files_dir, "demo.pdf")
+        input_file = os.path.join(files_dir, "generate_thumbnail", "sample.pdf")
         assert os.path.exists(input_file)
         thumbnail_name = "pdf_16_9.png"
         output_path = tmpdir.join(thumbnail_name)
@@ -83,7 +83,12 @@ class Test_pdf_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 class Test_HTML_zip_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
     def test_generates_16_9_thumbnail(self, tmpdir):
-        input_file = os.path.join(files_dir, 'thumb.zip')
+        """
+        The test fixtue `sample.zip` contains three images, one tall, one wide,
+        and one roughly square. The "choose largest area" logic shoudl select the
+        blue one to use as the thumbnail.
+        """
+        input_file = os.path.join(files_dir, 'generate_thumbnail', 'sample.zip')
         assert os.path.exists(input_file)
         thumbnail_name = 'zipfile.png'
         output_path = tmpdir.join(thumbnail_name)
@@ -99,7 +104,7 @@ class Test_HTML_zip_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 class Test_tiled_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
     def test_generates_brazil_thumbnail(self, tmpdir):
-        input_file = os.path.join(files_dir, 'thumbnails/BRAlogo1.png')
+        input_file = os.path.join(files_dir, 'thumbnails', 'BRAlogo1.png')
         assert os.path.exists(input_file)
         input_files = [input_file, input_file, input_file, input_file]
         thumbnail_name = 'tiled.png'
@@ -128,7 +133,7 @@ class Test_tiled_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 class Test_epub_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
     def test_generates_thumbnail(self, tmpdir):
-        input_file = os.path.join(files_dir, 'epub.epub')
+        input_file = os.path.join(files_dir, 'generate_thumbnail', 'sample.epub')
         assert os.path.exists(input_file)
         thumbnail_name = 'epub.png'
         output_path = tmpdir.join(thumbnail_name)
@@ -137,10 +142,19 @@ class Test_epub_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         self.check_thumbnail_generated(output_file)
 
     def test_generates_16_9_thumbnail(self, tmpdir):
-        input_file = os.path.join(files_dir, 'epub.epub')
+        input_file = os.path.join(files_dir, 'generate_thumbnail', 'sample.epub')
         assert os.path.exists(input_file)
         thumbnail_name = 'epub_16_9.png'
         output_path = tmpdir.join(thumbnail_name)
         output_file = output_path.strpath
-        images.get_image_from_epub(input_file, output_file, crop=",0") #crop='smart')
+        images.get_image_from_epub(input_file, output_file, crop='smart')
+        self.check_16_9_format(output_file)
+
+    def test_generates_16_9_thumbnail_from_top(self, tmpdir):
+        input_file = os.path.join(files_dir, 'generate_thumbnail', 'sample.epub')
+        assert os.path.exists(input_file)
+        thumbnail_name = 'epub_16_9_top.png'
+        output_path = tmpdir.join(thumbnail_name)
+        output_file = output_path.strpath
+        images.get_image_from_epub(input_file, output_file, crop=",0")
         self.check_16_9_format(output_file)
