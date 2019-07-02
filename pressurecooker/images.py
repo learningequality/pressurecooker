@@ -10,8 +10,6 @@ import zipfile
 import ebooklib
 import ebooklib.epub
 from io import BytesIO
-from .thumbscropping import scale_and_crop
-from le_utils.constants import file_formats
 
 # On OS X, the default backend will fail if you are not using a Framework build of Python,
 # e.g. in a virtualenv.
@@ -26,7 +24,16 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from pdf2image import convert_from_path
 from PIL import Image, ImageOps
 
-THUMBNAIL_SIZE = (400, 225) # 16:9
+from le_utils.constants import file_formats
+
+from .thumbscropping import scale_and_crop
+
+
+
+# SMARTCROP UTILS
+################################################################################
+
+THUMBNAIL_SIZE = (400, 225)  # 16:9
 
 def smartcrop_thumbnail(PIL_image, size=THUMBNAIL_SIZE,**kwargs):
     # optional arguments: zoom (crop outer X% before starting), target (center focus on point)
@@ -67,7 +74,8 @@ def get_image_from_ebook(ebookfile, fpath_out, smartcrop=False):
         im = smartcrop_thumbnail(im)
     im.save(fpath_out)
 
-def get_image_from_zip(htmlfile, fpath_out):
+
+def get_image_from_zip(htmlfile, fpath_out, smartcrop=True):
     biggest_name = None
     size = 0
     with zipfile.ZipFile(htmlfile, 'r') as zf:
@@ -90,21 +98,21 @@ def get_image_from_zip(htmlfile, fpath_out):
             image_data = fhandle.read()
             with BytesIO(image_data) as bhandle:
                 img = Image.open(bhandle)
-                thumb = smartcrop_thumbnail(img) # ensure 16:9
-                thumb.save(fpath_out)
+                if smartcrop: # ensure 16:9
+                    img = smartcrop_thumbnail(img)
+                img.save(fpath_out)
 
 
-
-
-def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
+def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0, smartcrop=False):
     """
     Create an image from the pdf at fpath_in and write result to fpath_out.
     """
     assert fpath_in.endswith('pdf'), "File must be in pdf format"
     pages = convert_from_path(fpath_in, 500, first_page=page_number, last_page=page_number+1)
     page = pages[0]
-    book_thumb = smartcrop_thumbnail(page, zoom=10)
-    book_thumb.save(fpath_out, 'PNG')
+    if smartcrop:
+        page = smartcrop_thumbnail(page, zoom=10)
+    page.save(fpath_out, 'PNG')
 
 
 def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_options=None):
