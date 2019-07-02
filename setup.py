@@ -28,6 +28,7 @@ setup(
     version=pressurecooker.__version__,
     description="A collection of utilities for media processing.",
     long_description=readme + '\n\n',
+    long_description_content_type="text/markdown",
     author="Learning Equality",
     author_email='dev@learningequality.org',
     url='https://github.com/learningequality/pressurecooker',
