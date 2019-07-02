@@ -35,19 +35,27 @@ from .thumbscropping import scale_and_crop
 
 THUMBNAIL_SIZE = (400, 225)  # 16:9
 
-def smartcrop_thumbnail(PIL_image, size=THUMBNAIL_SIZE,**kwargs):
-    # optional arguments: zoom (crop outer X% before starting), target (center focus on point)
-    return scale_and_crop(PIL_image, size, crop="smart", upscale=True, **kwargs)
-
+def scale_and_crop_thumbnail(image, size=THUMBNAIL_SIZE, crop="smart", **kwargs):
+    """
+    Scale and crop the PIL Image ``image`` to maximum dimensions of ``size``.
+    By default, ``crop`` is set to "smart" which will crop the image down to size
+    based on the entropy content of the pixels. The other options are:
+    * Use ``crop="0,0"`` to crop from the left and top edges
+    * Use ``crop=",0"`` to crop from the top edge.
+    Optional keyword arguments:
+    * ``zoom=X``: crop outer X% before starting
+    * ``target``: recenter here before cropping (default center ``(50, 50)``)
+    See the ``scale_and_crop`` docs in ``thumbscropping.py`` for more details.
+    """
+    return scale_and_crop(image, size, crop=crop, upscale=True, **kwargs)
 
 
 
 # THUMBNAILS FOR CONTENT KINDS
 ################################################################################
 
-def get_image_from_ebook(ebookfile, fpath_out, smartcrop=False):
-    book = ebooklib.epub.read_epub(ebookfile)
-    
+def get_image_from_epub(epubfile, fpath_out, crop=None):
+    book = ebooklib.epub.read_epub(epubfile)
     # 1. try to get cover image from book metadata (content.opf)
     cover_item = None
     covers = book.get_metadata('http://www.idpf.org/2007/opf', 'cover')
@@ -70,12 +78,11 @@ def get_image_from_ebook(ebookfile, fpath_out, smartcrop=False):
 
     # Save image_data to fpath_out
     im = Image.open(image_data)
-    if smartcrop:
-        im = smartcrop_thumbnail(im)
+    im = scale_and_crop_thumbnail(im, crop=crop)
     im.save(fpath_out)
 
 
-def get_image_from_zip(htmlfile, fpath_out, smartcrop=True):
+def get_image_from_zip(htmlfile, fpath_out, crop="smart"):
     biggest_name = None
     size = 0
     with zipfile.ZipFile(htmlfile, 'r') as zf:
@@ -98,20 +105,19 @@ def get_image_from_zip(htmlfile, fpath_out, smartcrop=True):
             image_data = fhandle.read()
             with BytesIO(image_data) as bhandle:
                 img = Image.open(bhandle)
-                if smartcrop: # ensure 16:9
-                    img = smartcrop_thumbnail(img)
+                img = scale_and_crop_thumbnail(img, crop=crop)
                 img.save(fpath_out)
 
 
-def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0, smartcrop=False):
+def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0, crop=None):
     """
     Create an image from the pdf at fpath_in and write result to fpath_out.
     """
     assert fpath_in.endswith('pdf'), "File must be in pdf format"
     pages = convert_from_path(fpath_in, 500, first_page=page_number, last_page=page_number+1)
     page = pages[0]
-    if smartcrop:
-        page = smartcrop_thumbnail(page, zoom=10)
+    # resize
+    page = scale_and_crop_thumbnail(page, zoom=10, crop=crop)
     page.save(fpath_out, 'PNG')
 
 
@@ -120,7 +126,6 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
     Create a waveform image from audio or video file at fpath_in and write to fpath_out
     Colormaps can be found at http://matplotlib.org/examples/color/colormaps_reference.html
     """
-
     colormap_options = colormap_options or {}
     cmap_name = colormap_options.get('name') or 'cool'
     vmin = colormap_options.get('vmin') or 0
@@ -174,8 +179,8 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         # Plot points
         ax.plot(np.arange(count), subsignals, color)
         ax.set_aspect("auto")
-
         canvas.print_figure(fpath_out)
+
     finally:
         os.remove(tempwav_name)
 
@@ -194,16 +199,14 @@ def create_tiled_image(source_images, fpath_out):
     root = sizes[len(source_images)]
 
     images = list(map(Image.open, source_images))
-    new_im = Image.new('RGB', THUMBNAIL_SIZE)
+    new_im = Image.new('RGBA', THUMBNAIL_SIZE)
     offset = (int(float(THUMBNAIL_SIZE[0]) / float(root)),
               int(float(THUMBNAIL_SIZE[1]) / float(root)) )
 
     index = 0
     for y_index in range(root):
         for x_index in range(root):
-            im = smartcrop_thumbnail(images[index], size=offset)
-#            im = ImageOps.fit(images[index], offset, Image.ANTIALIAS)
+            im = scale_and_crop_thumbnail(images[index], size=offset)
             new_im.paste(im, (int(offset[0] * x_index), int(offset[1] * y_index)))
             index = index + 1
     new_im.save(fpath_out)
-

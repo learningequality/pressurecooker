@@ -21,7 +21,7 @@ else:
     text_type = unicode
     binary_type = str
 
-# SmileyChris/easy-thumbnails is licensed under the  BSD 3-Clause "New" or "Revised" License
+# SmileyChris/easy-thumbnails is licensed under the BSD 3-Clause "New" or "Revised" License
 # Copyright (c) 2009, Chris Beaven
 # All rights reserved.
 # Redistribution and use in source and binary forms, with or without
@@ -81,8 +81,7 @@ def _compare_entropy(start_slice, end_slice, slice, difference):
 
 
 
-def scale_and_crop(im, size, crop=False, upscale=False, zoom=None, target=None,
-                   **kwargs):
+def scale_and_crop(im, size, crop=False, upscale=False, zoom=None, target=None, **kwargs):
     """
     Handle scaling and cropping the source image.
     Images can be scaled / cropped against a single dimension by using zero
