@@ -94,29 +94,7 @@ def get_image_from_zip(htmlfile, fpath_out):
                 thumb.save(fpath_out)
 
 
-def create_tiled_image(source_images, fpath_out):
-    """
-    Create a tiled image from list of image paths provided in source_images and
-    write result to fpath_out.
-    """
 
-    sizes = {1:1, 4:2, 9:3, 16:4, 25:5, 36:6, 49:7}
-    assert len(source_images) in sizes.keys(), "Number of images must be a perfect square <= 49"
-    root = sizes[len(source_images)]
-
-    images = list(map(Image.open, source_images))
-    new_im = Image.new('RGB', THUMBNAIL_SIZE)
-    offset = (int(float(THUMBNAIL_SIZE[0]) / float(root)),
-              int(float(THUMBNAIL_SIZE[1]) / float(root)) )
-
-    index = 0
-    for y_index in range(root):
-        for x_index in range(root):
-            im = smartcrop_thumbnail(images[index], size=offset)
-#            im = ImageOps.fit(images[index], offset, Image.ANTIALIAS)
-            new_im.paste(im, (int(offset[0] * x_index), int(offset[1] * y_index)))
-            index = index + 1
-    new_im.save(fpath_out)
 
 def create_image_from_pdf_page(fpath_in, fpath_out, page_number=0):
     """
@@ -192,3 +170,32 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         canvas.print_figure(fpath_out)
     finally:
         os.remove(tempwav_name)
+
+
+
+# TILED THUMBNAILS FOR TOPIC NODES (FOLDERS)
+################################################################################
+
+def create_tiled_image(source_images, fpath_out):
+    """
+    Create a 16:9 tiled image from list of image paths provided in source_images
+    and write result to fpath_out.
+    """
+    sizes = {1:1, 4:2, 9:3, 16:4, 25:5, 36:6, 49:7}
+    assert len(source_images) in sizes.keys(), "Number of images must be a perfect square <= 49"
+    root = sizes[len(source_images)]
+
+    images = list(map(Image.open, source_images))
+    new_im = Image.new('RGB', THUMBNAIL_SIZE)
+    offset = (int(float(THUMBNAIL_SIZE[0]) / float(root)),
+              int(float(THUMBNAIL_SIZE[1]) / float(root)) )
+
+    index = 0
+    for y_index in range(root):
+        for x_index in range(root):
+            im = smartcrop_thumbnail(images[index], size=offset)
+#            im = ImageOps.fit(images[index], offset, Image.ANTIALIAS)
+            new_im.paste(im, (int(offset[0] * x_index), int(offset[1] * y_index)))
+            index = index + 1
+    new_im.save(fpath_out)
+
