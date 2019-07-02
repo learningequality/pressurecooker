@@ -86,21 +86,22 @@ def get_image_from_zip(htmlfile, fpath_out, crop="smart"):
     biggest_name = None
     size = 0
     with zipfile.ZipFile(htmlfile, 'r') as zf:
-        valid_exts = [file_formats.PNG, file_formats.JPEG, file_formats.JPG]
-        valid_files = filter(lambda f: os.path.splitext(f)[1][1:] in valid_exts, zf.namelist())
-        # get the biggest (most pixels) image in the zip.
-        for filename in valid_files:
-            _, ext = os.path.splitext(filename)
-            with zf.open(filename) as fhandle:
-                image_data = fhandle.read()
-            with BytesIO(image_data) as bhandle:
-                img = Image.open(bhandle)
-                img_size = img.size[0] * img.size[1]
-                if img_size > size:
-                    biggest_name = filename
-                    size = img_size
+        # get the biggest (most pixels) image in the zip
+        image_exts = ['png', 'PNG', 'jpeg', 'JPEG', 'jpg', 'JPG']
+        for filename in zf.namelist():
+            _, dotext = os.path.splitext(filename)
+            ext = dotext[1:]
+            if ext in image_exts:
+                with zf.open(filename) as fhandle:
+                    image_data = fhandle.read()
+                    with BytesIO(image_data) as bhandle:
+                        img = Image.open(bhandle)
+                        img_size = img.size[0] * img.size[1]
+                        if img_size > size:
+                            biggest_name = filename
+                            size = img_size
         if not biggest_name:
-            return None  # this zip has no images
+            return None  # this zip has no images (how to signal?)
         with zf.open(biggest_name) as fhandle:
             image_data = fhandle.read()
             with BytesIO(image_data) as bhandle:
