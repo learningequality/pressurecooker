@@ -93,7 +93,7 @@ class Test_HTML_zip_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         thumbnail_name = 'zipfile.png'
         output_path = tmpdir.join(thumbnail_name)
         output_file = output_path.strpath
-        images.get_image_from_zip(input_file, output_file)
+        images.create_image_from_zip(input_file, output_file)
         im = self.check_16_9_format(output_file)
         # check is blue image
         r, g, b = im.getpixel((1, 1))
@@ -138,7 +138,7 @@ class Test_epub_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         thumbnail_name = 'epub.png'
         output_path = tmpdir.join(thumbnail_name)
         output_file = output_path.strpath
-        images.get_image_from_epub(input_file, output_file)
+        images.create_image_from_epub(input_file, output_file)
         self.check_thumbnail_generated(output_file)
 
     def test_generates_16_9_thumbnail(self, tmpdir):
@@ -147,7 +147,7 @@ class Test_epub_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         thumbnail_name = 'epub_16_9.png'
         output_path = tmpdir.join(thumbnail_name)
         output_file = output_path.strpath
-        images.get_image_from_epub(input_file, output_file, crop='smart')
+        images.create_image_from_epub(input_file, output_file, crop='smart')
         self.check_16_9_format(output_file)
 
     def test_generates_16_9_thumbnail_from_top(self, tmpdir):
@@ -156,5 +156,5 @@ class Test_epub_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         thumbnail_name = 'epub_16_9_top.png'
         output_path = tmpdir.join(thumbnail_name)
         output_file = output_path.strpath
-        images.get_image_from_epub(input_file, output_file, crop=",0")
+        images.create_image_from_epub(input_file, output_file, crop=",0")
         self.check_16_9_format(output_file)

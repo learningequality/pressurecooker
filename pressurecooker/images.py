@@ -54,7 +54,11 @@ def scale_and_crop_thumbnail(image, size=THUMBNAIL_SIZE, crop="smart", **kwargs)
 # THUMBNAILS FOR CONTENT KINDS
 ################################################################################
 
-def get_image_from_epub(epubfile, fpath_out, crop=None):
+def create_image_from_epub(epubfile, fpath_out, crop=None):
+    """
+    Generate a thumbnail image from `epubfile` and save it to `fpath_out`.
+    Raises ThumbnailGenerationError if thumbnail extraction fails.
+    """
     book = ebooklib.epub.read_epub(epubfile)
     # 1. try to get cover image from book metadata (content.opf)
     cover_item = None
@@ -71,9 +75,9 @@ def get_image_from_epub(epubfile, fpath_out, crop=None):
     else:
         # 2. fallback to get first image in the ePub file
         images = list(book.get_items_of_type(ebooklib.ITEM_IMAGE))
-        # TODO: get largest image of the bunch
         if not images:
-            return
+            raise ThumbnailGenerationError("ePub file {} contains no images.".format(epubfile))
+        # TODO: get largest image of the bunch
         image_data = BytesIO(images[0].get_content())
 
     # Save image_data to fpath_out
@@ -82,7 +86,11 @@ def get_image_from_epub(epubfile, fpath_out, crop=None):
     im.save(fpath_out)
 
 
-def get_image_from_zip(htmlfile, fpath_out, crop="smart"):
+def create_image_from_zip(htmlfile, fpath_out, crop="smart"):
+    """
+    Create an image from the html5 zip at htmlfile and write result to fpath_out.
+    Raises ThumbnailGenerationError if thumbnail extraction fails.
+    """
     biggest_name = None
     size = 0
     with zipfile.ZipFile(htmlfile, 'r') as zf:
@@ -100,8 +108,8 @@ def get_image_from_zip(htmlfile, fpath_out, crop="smart"):
                         if img_size > size:
                             biggest_name = filename
                             size = img_size
-        if not biggest_name:
-            return None  # this zip has no images (how to signal?)
+        if biggest_name is None:
+            raise ThumbnailGenerationError("HTML5 zip file {} contains no images.".format(htmlfile))
         with zf.open(biggest_name) as fhandle:
             image_data = fhandle.read()
             with BytesIO(image_data) as bhandle:
@@ -181,10 +189,8 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
         ax.plot(np.arange(count), subsignals, color)
         ax.set_aspect("auto")
         canvas.print_figure(fpath_out)
-
     finally:
         os.remove(tempwav_name)
-
 
 
 # TILED THUMBNAILS FOR TOPIC NODES (FOLDERS)
@@ -211,3 +217,14 @@ def create_tiled_image(source_images, fpath_out):
             new_im.paste(im, (int(offset[0] * x_index), int(offset[1] * y_index)))
             index = index + 1
     new_im.save(fpath_out)
+
+
+
+# EXCEPTIONS
+################################################################################
+
+class ThumbnailGenerationError(Exception):
+    """
+    Custom error returned when thumbnail extraction process fails.
+    """
+    pass
