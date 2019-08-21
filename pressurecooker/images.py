@@ -5,14 +5,14 @@ import os
 import wave
 import subprocess
 import sys
+import matplotlib
 
 # On OS X, the default backend will fail if you are not using a Framework build of Python,
-# e.g. in a virtualenv. To avoid having to set MPLBACKEND each time we use Pressure Cooker,
-# automatically set the backend.
-if sys.platform.startswith("darwin"):
-    import matplotlib
-    if matplotlib.get_backend().lower() == "macosx":
-        matplotlib.use('PS')
+# e.g. in a virtualenv.
+# On Linux, the default backend will fail if tkinter is not installed.
+# To avoid having to set MPLBACKEND each time we use Pressure Cooker, automatically set the backend.
+
+matplotlib.use("PS")
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
