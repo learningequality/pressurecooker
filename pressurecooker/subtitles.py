@@ -1,6 +1,7 @@
 import codecs
 from pycaption import CaptionSet, WebVTTWriter
 from pycaption import WebVTTReader, SRTReader, SAMIReader, SCCReader, DFXPReader
+from pycaption  import CaptionReadError
 from pycaption.base import DEFAULT_LANGUAGE_CODE
 from le_utils.constants import file_formats
 
@@ -54,6 +55,9 @@ class SubtitleReader:
                 return self.reader.read(caption_str, lang=LANGUAGE_CODE_UNKNOWN)
 
             return self.reader.read(caption_str)
+        except CaptionReadError:
+            # added to suppress a CaptionReadNoCaptions error
+            return None
         except UnicodeDecodeError:
             return None
 
