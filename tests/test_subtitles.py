@@ -78,6 +78,14 @@ class SubtitleConverterTest(TestCase):
         with self.assertRaises(InvalidSubtitleFormatError):
             converter.convert(expected_language.code)
 
+    def test_invalid_format__empty(self):
+        expected_language = languages.getlang_by_name('English')
+
+        converter = build_subtitle_converter_from_file(os.path.join(test_files_dir, 'empty.ttml'))
+
+        with self.assertRaises(InvalidSubtitleFormatError, msg='Caption file is empty'):
+            converter.convert(expected_language.code)
+
     def test_valid_language(self):
         expected_file = os.path.join(test_files_dir, 'encapsulated.vtt')
         expected_language = languages.getlang_by_name('English')

@@ -1,7 +1,7 @@
 import codecs
 from pycaption import CaptionSet, WebVTTWriter
 from pycaption import WebVTTReader, SRTReader, SAMIReader, SCCReader, DFXPReader
-from pycaption  import CaptionReadError
+from pycaption  import CaptionReadError, CaptionReadNoCaptions
 from pycaption.base import DEFAULT_LANGUAGE_CODE
 from le_utils.constants import file_formats
 
@@ -47,19 +47,24 @@ class SubtitleReader:
         :return: The captions from the file in a `CaptionSet` or `None` if unsupported
         :rtype: CaptionSet, None
         """
+        # attempt detection first, being accepting of failure
         try:
             if not self.reader.detect(caption_str):
                 return None
+        except UnicodeDecodeError:
+            return None
 
+        # after detection, if read fails, be aggressive and throw an error
+        try:
             if self.requires_language:
                 return self.reader.read(caption_str, lang=LANGUAGE_CODE_UNKNOWN)
 
             return self.reader.read(caption_str)
-        except CaptionReadError:
-            # added to suppress a CaptionReadNoCaptions error
-            return None
-        except UnicodeDecodeError:
-            return None
+        except CaptionReadNoCaptions:
+            raise InvalidSubtitleFormatError('Caption file has no captions')
+        except (CaptionReadError, UnicodeDecodeError) as e:
+            raise InvalidSubtitleFormatError('Caption file is invalid: {}'.format(e))
+        # allow other errors to be passed through
 
 
 class SubtitleConverter:
