@@ -9,4 +9,4 @@ release_staging: dist
 
 release: dist
 	# make sure we upload the universal whl file
-	twine upload -s --sign-with gpg2 dist/*py2.py3-none-any.whl
+	twine upload  dist/*py2.py3-none-any.whl
