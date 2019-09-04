@@ -1,7 +1,7 @@
 import codecs
 from pycaption import CaptionSet, WebVTTWriter
 from pycaption import WebVTTReader, SRTReader, SAMIReader, SCCReader, DFXPReader
-from pycaption  import CaptionReadError, CaptionReadNoCaptions
+from pycaption import CaptionReadError, CaptionReadNoCaptions
 from pycaption.base import DEFAULT_LANGUAGE_CODE
 from le_utils.constants import file_formats
 
