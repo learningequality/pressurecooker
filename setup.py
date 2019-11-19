@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import pressurecooker
 from setuptools import setup, find_packages
+import sys
 
 
 with open('README.md') as readme_file:
@@ -19,6 +20,8 @@ requirements = [
     "le-pycaption>=2.0.0a3",
     "EbookLib>=0.17.1",
 ]
+if sys.version_info < (3, 0, 0):
+    requirements.append("pathlib>=1.0.1")
 
 test_requirements = [
     # TODO: put package test requirements here
