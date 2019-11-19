@@ -4,7 +4,7 @@ le-utils>=0.1.19
 matplotlib==2.2.3
 numpy==1.15.4
 Pillow==5.4.1
-youtube-dl>=2019.6.21
+youtube-dl>=2019.11.5
 pdf2image>=1.4.0
 le-pycaption>=2.0.0a2
 EbookLib>=0.17.1
