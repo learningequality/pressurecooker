@@ -18,7 +18,7 @@ outputs_dir = os.path.join(files_dir, 'expected_output')
 studio_cmap_options = {'name': 'BuPu', 'vmin': 0.3, 'vmax': 0.7, 'color': 'black'}
 
 
-SHOW_THUMBS = True     # set to True to show outputs when running tests locally
+SHOW_THUMBS = False     # set to True to show outputs when running tests locally
 
 
 
