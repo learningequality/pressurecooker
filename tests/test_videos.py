@@ -107,22 +107,6 @@ class Test_check_video_resolution:
 
 
 
-PNG_MAGIC_NUMBER = b'\x89P'
-
-class Test_extract_thumbnail_from_video:
-
-    def test_returns_a_16_9_image(self, low_res_video):
-        with TempFile(suffix=".png") as pngf:
-            videos.extract_thumbnail_from_video(low_res_video.name, pngf.name, overwrite=True)
-            with open(pngf.name, "rb") as f:
-                f.seek(0)
-                assert f.read(2) == PNG_MAGIC_NUMBER
-            im = PIL.Image.open(pngf.name)
-            width, height = im.size
-            assert float(width)/float(height) == 16.0/9.0
-
-
-
 def get_resolution(videopath):
     """Helper function to get resolution of video at videopath."""
     result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',

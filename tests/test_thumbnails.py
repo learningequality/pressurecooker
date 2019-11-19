@@ -3,6 +3,13 @@ import pytest
 
 import PIL
 from pressurecooker import images
+from pressurecooker import videos
+
+
+
+from .test_videos import low_res_video
+
+
 
 tests_dir = os.path.dirname(os.path.abspath(__file__))
 files_dir = os.path.join(tests_dir, 'files')
@@ -17,6 +24,13 @@ SHOW_THUMBS = False     # set to True to show outputs when running tests locally
 
 
 class BaseThumbnailGeneratorTestCase(object):
+
+    def check_is_png_file(self, output_file):
+        PNG_MAGIC_NUMBER = b'\x89P'
+        with open(output_file, "rb") as f:
+            f.seek(0)
+            assert f.read(2) == PNG_MAGIC_NUMBER
+            f.close()
 
     def check_thumbnail_generated(self, output_file):
         """
@@ -44,7 +58,7 @@ class BaseThumbnailGeneratorTestCase(object):
 
 
 
-class Test_wavefile_thumbnail_generation(BaseThumbnailGeneratorTestCase):
+class Test_mp3_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
     def test_generates_16_9_thumbnail(self, tmpdir):
         input_file = os.path.join(files_dir, 'Wilhelm_Scream.mp3')
@@ -80,7 +94,7 @@ class Test_pdf_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
 
 
-class Test_HTML_zip_thumbnail_generation(BaseThumbnailGeneratorTestCase):
+class Test_html_zip_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
     def test_generates_16_9_thumbnail(self, tmpdir):
         """
@@ -158,3 +172,17 @@ class Test_epub_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         output_file = output_path.strpath
         images.create_image_from_epub(input_file, output_file, crop=",0")
         self.check_16_9_format(output_file)
+
+
+
+class Test_video_thumbnail_generation(BaseThumbnailGeneratorTestCase):
+
+    def test_generates_16_9_thumbnail(self, tmpdir, low_res_video):
+        input_file = low_res_video.name
+        thumbnail_name = 'low_res_video_thumbnail.png'
+        output_path = tmpdir.join(thumbnail_name)
+        output_file = output_path.strpath
+        videos.extract_thumbnail_from_video(input_file, output_file, overwrite=True)
+        self.check_16_9_format(output_file)
+        self.check_is_png_file(output_file)
+
