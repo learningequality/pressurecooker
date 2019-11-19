@@ -6,8 +6,7 @@ from pressurecooker import images
 from pressurecooker import videos
 
 
-
-from .test_videos import low_res_video
+from .test_videos import low_res_video, high_res_video, bad_video
 
 
 
@@ -19,7 +18,7 @@ outputs_dir = os.path.join(files_dir, 'expected_output')
 studio_cmap_options = {'name': 'BuPu', 'vmin': 0.3, 'vmax': 0.7, 'color': 'black'}
 
 
-SHOW_THUMBS = False     # set to True to show outputs when running tests locally
+SHOW_THUMBS = True     # set to True to show outputs when running tests locally
 
 
 
@@ -177,7 +176,7 @@ class Test_epub_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
 class Test_video_thumbnail_generation(BaseThumbnailGeneratorTestCase):
 
-    def test_generates_16_9_thumbnail(self, tmpdir, low_res_video):
+    def test_generates_16_9_thumbnail_from_low_res(self, tmpdir, low_res_video):
         input_file = low_res_video.name
         thumbnail_name = 'low_res_video_thumbnail.png'
         output_path = tmpdir.join(thumbnail_name)
@@ -185,4 +184,21 @@ class Test_video_thumbnail_generation(BaseThumbnailGeneratorTestCase):
         videos.extract_thumbnail_from_video(input_file, output_file, overwrite=True)
         self.check_16_9_format(output_file)
         self.check_is_png_file(output_file)
+
+    def test_generates_16_9_thumbnail_from_high_res(self, tmpdir, high_res_video):
+        input_file = high_res_video.name
+        thumbnail_name = 'high_res_video_thumbnail.png'
+        output_path = tmpdir.join(thumbnail_name)
+        output_file = output_path.strpath
+        videos.extract_thumbnail_from_video(input_file, output_file, overwrite=True)
+        self.check_16_9_format(output_file)
+        self.check_is_png_file(output_file)
+
+    def test_bad_video_raises(self, tmpdir, bad_video):
+        input_file = bad_video.name
+        thumbnail_name = 'bad_video_thumbnail.png'
+        output_path = tmpdir.join(thumbnail_name)
+        output_file = output_path.strpath
+        with pytest.raises(images.ThumbnailGenerationError):
+            videos.extract_thumbnail_from_video(input_file, output_file, overwrite=True)
 
