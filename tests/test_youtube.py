@@ -5,6 +5,9 @@ import tempfile
 import pytest
 IS_TRAVIS_TESTING = "TRAVIS" in os.environ and os.environ["TRAVIS"] == "true"
 
+# Nov 19: marking youtube tests to be skipped because Travis server is IP banned
+pytestmark = pytest.mark.skipif(IS_TRAVIS_TESTING, reason="Skip YouTube tests on Travis.")
+
 from pressurecooker import utils
 from pressurecooker import youtube
 
