@@ -11,10 +11,7 @@ import ebooklib
 import ebooklib.epub
 from io import BytesIO
 
-# On OS X, the default backend will fail if you are not using a Framework build of Python,
-# e.g. in a virtualenv.
-# On Linux, the default backend will fail if tkinter is not installed.
-# To avoid having to set MPLBACKEND each time we use Pressure Cooker, automatically set the backend.
+# Set the backend to avoid platform-specific differences in MPLBACKEND
 matplotlib.use("PS")
 
 import matplotlib.pyplot as plt
@@ -65,7 +62,6 @@ def create_image_from_epub(epubfile, fpath_out, crop=None):
     covers = book.get_metadata('http://www.idpf.org/2007/opf', 'cover')
     if covers:
         cover_tuple = covers[0] # ~= (None, {'name':'cover', 'content':'item1'})
-        assert cover_tuple[1]['name'] == 'cover', 'wrong key name'
         cover_item_id = cover_tuple[1]['content']
         for item in book.items:
             if item.id == cover_item_id:
@@ -145,8 +141,8 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
     os.close(tempwav_fh)  # close the file handle so ffmpeg can write to the file
     try:
         ffmpeg_cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-i', fpath_in]
-        # The below settings apply to the WebM encoder, which doesn't seem to be built by Homebrew on Mac,
-        # so we apply them conditionally.
+        # The below settings apply to the WebM encoder, which doesn't seem to be
+        # built by Homebrew on Mac, so we apply them conditionally
         if not sys.platform.startswith('darwin'):
             ffmpeg_cmd.extend(['-cpu-used', '-16'])
         ffmpeg_cmd += [tempwav_name]
@@ -154,7 +150,7 @@ def create_waveform_image(fpath_in, fpath_out, max_num_of_points=None, colormap_
 
         spf = wave.open(tempwav_name, 'r')
 
-        #Extract Raw Audio from Wav File
+        # Extract raw audio from wav file
         signal = spf.readframes(-1)
         spf.close()
         signal = np.frombuffer(signal, np.int16)
