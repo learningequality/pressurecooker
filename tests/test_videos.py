@@ -1,6 +1,7 @@
 from __future__ import print_function
 import atexit
 import os
+import PIL
 import pytest
 import re
 import requests
@@ -8,7 +9,6 @@ import requests_cache
 import subprocess
 import sys
 import tempfile
-import PIL
 
 from le_utils.constants import format_presets
 from pressurecooker import videos
@@ -21,6 +21,9 @@ else:
     requests_cache.install_cache("video_cache")
 
 
+
+# FIXTURES
+################################################################################
 
 @pytest.fixture
 def low_res_video():
@@ -87,6 +90,10 @@ def bad_video():
     return f            # returns a temporary file with a closed file descriptor
 
 
+
+
+# TESTS
+################################################################################
 
 class Test_check_video_resolution:
 
@@ -170,7 +177,8 @@ class Test_convert_video:
 
 
 
-## Helper class for cross-platform temporary files
+# Helper class for cross-platform temporary files
+################################################################################
 
 def remove_temp_file(*args, **kwargs):
     filename = args[0]
