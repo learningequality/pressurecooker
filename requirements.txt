@@ -1,6 +1,6 @@
 beautifulsoup4>=4.6.3
 ffmpy>=0.2.2
-le-utils>=0.1.19
+le-utils>=0.1.24
 matplotlib==2.2.3
 numpy==1.15.4
 Pillow==5.4.1

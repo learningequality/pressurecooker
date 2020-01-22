@@ -11,7 +11,7 @@ with open('README.md') as readme_file:
 requirements = [
     "beautifulsoup4>=4.6.3",
     "ffmpy>=0.2.2",
-    "le-utils>=0.1.20",
+    "le-utils>=0.1.24",
     "matplotlib==2.2.3",    # the last with py27 support
     "numpy==1.15.4",        # pinned to avoid surprizes
     "Pillow==5.4.1",        # pinned to avoid surprizes
