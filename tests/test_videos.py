@@ -1,6 +1,7 @@
 from __future__ import print_function
 import atexit
 import os
+import PIL
 import pytest
 import re
 import requests
@@ -20,6 +21,9 @@ else:
     requests_cache.install_cache("video_cache")
 
 
+
+# FIXTURES
+################################################################################
 
 @pytest.fixture
 def low_res_video():
@@ -87,6 +91,10 @@ def bad_video():
 
 
 
+
+# TESTS
+################################################################################
+
 class Test_check_video_resolution:
 
     def test_returns_a_format_preset(self, low_res_video):
@@ -102,21 +110,6 @@ class Test_check_video_resolution:
     def test_detects_high_res_videos(self, high_res_video):
         preset = videos.guess_video_preset_by_resolution(high_res_video.name)
         assert preset == format_presets.VIDEO_HIGH_RES
-
-
-
-
-PNG_MAGIC_NUMBER = b'\x89P'
-
-class Test_extract_thumbnail_from_video:
-
-    def test_returns_an_image(self, low_res_video):
-        with TempFile(suffix=".png") as pngf:
-            videos.extract_thumbnail_from_video(low_res_video.name, pngf.name, overwrite=True)
-            with open(pngf.name, "rb") as f:
-                f.seek(0)
-                assert f.read(2) == PNG_MAGIC_NUMBER
-
 
 
 
@@ -184,7 +177,8 @@ class Test_convert_video:
 
 
 
-## Helper class for cross-platform temporary files
+# Helper class for cross-platform temporary files
+################################################################################
 
 def remove_temp_file(*args, **kwargs):
     filename = args[0]
