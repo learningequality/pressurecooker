@@ -1,3 +1,3 @@
 # Even almost empty files have value in them :')
 
-__version__ = "0.0.25"
+__version__ = "0.0.26"
