@@ -33,6 +33,7 @@ def test_bad_proxies_get_banned():
     assert sorted(proxy.BROKEN_PROXIES) == sorted(proxy.PROXY_LIST)
 
 
+@pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
 def test_proxy_download():
     proxy.get_proxies(refresh=True)
     assert len(proxy.PROXY_LIST) > 1
