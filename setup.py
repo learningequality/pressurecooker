@@ -15,7 +15,7 @@ requirements = [
     "matplotlib==2.2.3",    # the last with py27 support
     "numpy==1.15.4",        # pinned to avoid surprizes
     "Pillow==5.4.1",        # pinned to avoid surprizes
-    "youtube-dl>=2019.11.5",
+    "youtube-dl>=2020.1.24",
     "pdf2image==1.11.0",    # pinned because py2.7 problems in 1.12.1
     "le-pycaption>=2.0.0a3",
     "EbookLib>=0.17.1",
