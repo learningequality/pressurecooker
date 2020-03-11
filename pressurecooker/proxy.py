@@ -1,17 +1,26 @@
 import random
 import re
-
 import requests
 
-
-PROXY_LIST = []
-RECENT_PROXIES = []
-BROKEN_PROXIES = []
+PROXY_LIST = []             # Current list of proxy servers to choose from
+RECENT_PROXIES = []         # Recently used proxies (to avoid using too often)
+BROKEN_PROXIES = []         # Known-bad proxies (we want to void choosing these)
 RECENT_MAX = 30
+
+# Proxy settings that can be conrolled via ENV variables
+PROXY_TIMOUT_LIMIT = os.getenv('PROXY_TIMOUT_LIMIT', "2000")
+proxy_list_env_var = os.getenv('PROXY_LIST', None)
+if proxy_list_env_var:
+    # Manually set PROXY_LIST from ENV variable (a ;-sparated list of proxies)
+    PROXY_LIST = proxy_list_env_var.split(';')
 
 
 def get_proxyscape_proxies():
-    r = requests.get('https://api.proxyscrape.com/?request=getproxies&proxytype=http&timeout=2000&country=all&ssl=yes&anonymity=all')
+    """Loads a list of `{ip_address}:{port}` for public proxy servers."""
+    url = 'https://api.proxyscrape.com/?request=getproxies'
+    url += '&proxytype=http&country=all&ssl=yes&anonymity=all'
+    url += '&timeout=' + PROXY_TIMOUT_LIMIT
+    r = requests.get(url)
     return r.text.split('\r\n')
 
 
