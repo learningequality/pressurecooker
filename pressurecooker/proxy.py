@@ -1,6 +1,8 @@
+import os
 import random
 import re
 import requests
+
 
 PROXY_LIST = []             # Current list of proxy servers to choose from
 RECENT_PROXIES = []         # Recently used proxies (to avoid using too often)
@@ -52,8 +54,8 @@ def choose_proxy():
     attempt = 0
     attempts_made = 0
     while not chosen:
-        proxy = proxies[random.randint(0, len(proxies) - 1)]
-        if not proxy in RECENT_PROXIES + BROKEN_PROXIES:
+        proxy = random.choice(proxies)
+        if not proxy in RECENT_PROXIES:
             chosen = True
             RECENT_PROXIES.append(proxy)
             if len(RECENT_PROXIES) > RECENT_MAX:
@@ -64,8 +66,8 @@ def choose_proxy():
             if attempts_made > max_attempts:
                 break
 
-            # Some chefs can take hours or days, so our proxy list
-            # may be stale. Try refreshing the proxy list.
+            # Some chefs can take hours or days, so our proxy list may be stale.
+            # Try refreshing the proxy list.
             if attempt == retry_attempts:
                 attempt = 0
                 proxies = get_proxies(refresh=True)
@@ -77,6 +79,8 @@ def add_to_broken_proxy_list(proxy):
     global BROKEN_PROXIES
     if not proxy in BROKEN_PROXIES:
         BROKEN_PROXIES.append(proxy)
+    if proxy in PROXY_LIST:
+        PROXY_LIST.remove(proxy)
 
 
 def reset_broken_proxy_list():
