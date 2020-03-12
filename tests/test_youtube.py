@@ -13,6 +13,7 @@ from pressurecooker import youtube
 
 trees = {}
 yt_resources = {}
+USE_PROXY_FOR_TESTS = False
 
 cc_playlist = 'https://www.youtube.com/playlist?list=PL7m903CwFUgntbjkVMwts89fZq0INCtVS'
 non_cc_playlist = 'https://www.youtube.com/playlist?list=PLBO8M-O_dTPE51ymDUgilf8DclGAEg9_A'
@@ -20,10 +21,15 @@ subtitles_video = 'https://www.youtube.com/watch?v=6uXAbJQoZlE'
 subtitles_zu_video = 'https://www.youtube.com/watch?v=FN12ty5ztAs'
 
 
-def get_yt_resource(url):
+def get_yt_resource(url, **kwargs):
     global yt_resources
     if not url in yt_resources:
-        yt_resources[url] = youtube.YouTubeResource(url)
+        if 'useproxy' not in kwargs:
+            if USE_PROXY_FOR_TESTS:
+                kwargs['useproxy'] = True
+            else:
+                kwargs['useproxy'] = False
+        yt_resources[url] = youtube.YouTubeResource(url, **kwargs)
 
     return yt_resources[url]
 
@@ -145,3 +151,13 @@ def test_subtitles_lang_helpers_incompatible():
     assert verdict1 == False, 'Failed to reject incompatible youtube_language'
     verdict2 = youtube.is_youtube_subtitle_file_supported_language('zzz')
     assert verdict2 == False, 'Failed to reject incompatible youtube_language'
+
+
+def test_repeated_calls_to_get_resource_info():
+    """
+    Ensure `is_youtube_subtitle_file_supported_language` rejects unknown language codes.
+    """
+    yt_resource = get_yt_resource(subtitles_video)
+    info1 = yt_resource.get_resource_info()
+    info2 = yt_resource.get_resource_info()
+    assert info1 == info2, 'get_resource_info returned different results on second call'

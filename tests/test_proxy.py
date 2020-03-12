@@ -13,7 +13,6 @@ YOUTUBE_TEST_VIDEO = 'https://www.youtube.com/watch?v=C0DPdy98e4c'
 YOUTUBE_TEST_PLAYLIST = 'https://www.youtube.com/playlist?list=PL472BC6F4F2C3ABEF'
 
 
-
 # This test takes a few minutes, but is very useful for checking that the proxy is not being ignored,
 # so mark it to run when the PYTEST_RUN_SLOW env var is set.
 @pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test takes several minutes to complete.")
@@ -49,3 +48,14 @@ def test_proxy_download(tmp_path):
             has_video = True
 
     assert has_video, 'Video file not found'
+
+
+@pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
+def test_proxy_download_playlist(tmp_path):
+    playlist = YouTubeResource(YOUTUBE_TEST_PLAYLIST)
+    playlist.download(tmp_path)
+
+    temp_files = os.listdir(os.path.join(tmp_path, 'Playlist'))
+    expected = ['zbkizy-Y3qw.jpg', 'oXnzstpBEOg.mp4', 'oXnzstpBEOg.jpg', 'zbkizy-Y3qw.mp4']
+
+    assert  set(temp_files) == set(expected)
