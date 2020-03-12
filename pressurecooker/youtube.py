@@ -94,7 +94,9 @@ class YouTubeResource(object):
                 start_time = datetime.now()
                 self.info = self.client.extract_info(self.url, download=False, process=True)
                 end_time = datetime.now()
-                if 'entries' in self.info and all(e is None for e in self.info['entries']):
+                if self.info is None:
+                    raise ValueError('extract_info failed on resource ' + url)
+                elif 'entries' in self.info and all(e is None for e in self.info['entries']):
                     raise ValueError('extract_info failed on resource ' + url)
 
                 # Mark slow proxies as broken
