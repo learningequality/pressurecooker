@@ -142,7 +142,7 @@ class YouTubeResource(object):
         """
         Download the YouTube resource(s) specified in `self.info`. If `self.info`
         is None, it will be populated by calling `self.get_resource_info` which
-        in turn uses `self.url`.
+        in turn uses `self.url`. Returns None if download fails.
         """
         download_dir = os.path.join(base_path, self.get_dir_name_from_url())
         utils.make_dir_if_needed(download_dir)
@@ -163,11 +163,20 @@ class YouTubeResource(object):
         LOGGER.debug("Using options = {}".format(self.client.params))
 
         LOGGER.info("Downloading {} to dir {}".format(self.url, download_dir))
-        self.info = self.client.process_ie_result(self.info, download=True)
+        for i in range(self.num_retries):
+            try:
+                self.info = self.client.process_ie_result(self.info, download=True)
+                break
+            except Exception as e:
+                LOGGER.warning(e)
+                if i < self.num_retries - 1:
+                    LOGGER.warning("Dowload {} failed, retrying...".format(i))
+                    sleep_seconds = .5
+                    time.sleep(sleep_seconds)
 
         # Post-process results
-        edited_results = self._format_for_ricecooker(self.info)
         if self.info:
+            edited_results = self._format_for_ricecooker(self.info)
             if 'children' in edited_results:
                 for child in edited_results['children']:
                     vfilename = "{}.{}".format(child["id"], child['ext'])
@@ -175,7 +184,9 @@ class YouTubeResource(object):
             else:
                 vfilename = "{}.{}".format(edited_results["id"], edited_results['ext'])
                 edited_results['filename'] = os.path.join(download_dir, vfilename)
-        return edited_results
+            return edited_results
+        else:
+            return None
 
 
     def get_resource_subtitles(self, options=None):

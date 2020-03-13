@@ -51,7 +51,7 @@ def test_proxy_download(tmp_path):
 
 
 @pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
-def test_proxy_download_playlist(tmp_path):
+def test_proxy_playlist_download(tmp_path):
     playlist = YouTubeResource(YOUTUBE_TEST_PLAYLIST)
     playlist.download(tmp_path)
 
