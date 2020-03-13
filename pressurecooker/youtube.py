@@ -66,7 +66,6 @@ class YouTubeResource(object):
         extract_info_options = dict(
             verbose = True,
             no_warnings = True,
-            ignoreerrors = True,  # skip private/geolocked videos w/o stopping
             # By default, YouTubeDL will pick what it determines to be the best formats, but for consistency's sake
             # we want to always get preferred formats (default of mp4 and m4a) when possible.
             format = "bestvideo[height<={maxheight}][ext={vext}]+bestaudio[ext={aext}]/best[height<={maxheight}][ext={vext}]".format(
@@ -94,10 +93,6 @@ class YouTubeResource(object):
                 start_time = datetime.now()
                 self.info = self.client.extract_info(self.url, download=False, process=True)
                 end_time = datetime.now()
-                if self.info is None:
-                    raise ValueError('extract_info failed on resource ' + url)
-                elif 'entries' in self.info and all(e is None for e in self.info['entries']):
-                    raise ValueError('extract_info failed on resource ' + url)
 
                 # Mark slow proxies as broken
                 extract_time = (end_time - start_time).total_seconds()
@@ -166,11 +161,12 @@ class YouTubeResource(object):
         for i in range(self.num_retries):
             try:
                 self.info = self.client.process_ie_result(self.info, download=True)
+                print('finished with process_ie_result')
                 break
             except Exception as e:
                 LOGGER.warning(e)
                 if i < self.num_retries - 1:
-                    LOGGER.warning("Dowload {} failed, retrying...".format(i))
+                    LOGGER.warning("Dowload {} failed, retrying...".format(i+1))
                     sleep_seconds = .5
                     time.sleep(sleep_seconds)
 
