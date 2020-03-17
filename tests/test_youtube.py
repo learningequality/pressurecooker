@@ -164,6 +164,7 @@ def test_repeated_calls_to_get_resource_info():
     assert info1 == info2, 'get_resource_info returned different results on second call'
 
 
+@pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
 @pytest.mark.parametrize("useproxy", [True, False])
 def test_download_from_web_video_file(useproxy, tmp_path):
     """
@@ -189,6 +190,7 @@ def test_download_from_web_video_file(useproxy, tmp_path):
         assert os.path.exists(destination_path), 'Missing video file'
 
 
+@pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
 @pytest.mark.parametrize("useproxy", [True, False])
 def test_download_from_web_subtitle_file(useproxy, tmp_path):
     """
