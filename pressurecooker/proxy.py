@@ -7,7 +7,7 @@ import requests
 PROXY_LIST = []             # Current list of proxy servers to choose from
 RECENT_PROXIES = []         # Recently used proxies (to avoid using too often)
 BROKEN_PROXIES = []         # Known-bad proxies (we want to void choosing these)
-RECENT_MAX = 30
+RECENT_MAX = 3
 
 # Proxy settings that can be conrolled via ENV variables
 PROXY_TIMOUT_LIMIT = os.getenv('PROXY_TIMOUT_LIMIT', "2000")

@@ -13,6 +13,7 @@ from . import proxy
 from . import utils
 
 LOGGER = logging.getLogger("YouTubeResource")
+LOGGER.setLevel(logging.DEBUG)
 
 
 def get_youtube_info(youtube_url):
@@ -139,8 +140,11 @@ class YouTubeResource(object):
         is None, it will be populated by calling `self.get_resource_info` which
         in turn uses `self.url`. Returns None if download fails.
         """
-        download_dir = os.path.join(base_path, self.get_dir_name_from_url())
-        utils.make_dir_if_needed(download_dir)
+        if base_path:
+            download_dir = os.path.join(base_path, self.get_dir_name_from_url())
+            utils.make_dir_if_needed(download_dir)
+        else:
+            download_dir = '.'
 
         if self.client is None or self.info is None:
             self.get_resource_info()
@@ -155,13 +159,14 @@ class YouTubeResource(object):
         self.client.params['writethumbnail'] = True
         if options:
             self.client.params.update(options)
-        LOGGER.debug("Using options = {}".format(self.client.params))
+        LOGGER.debug("Using download options = {}".format(self.client.params))
+
 
         LOGGER.info("Downloading {} to dir {}".format(self.url, download_dir))
         for i in range(self.num_retries):
             try:
                 self.info = self.client.process_ie_result(self.info, download=True)
-                print('finished with process_ie_result')
+                print('Finished process_ie_result successfully')
                 break
             except Exception as e:
                 LOGGER.warning(e)
