@@ -166,39 +166,48 @@ def test_repeated_calls_to_get_resource_info():
 
 @pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
 @pytest.mark.parametrize("useproxy", [True, False])
-def test_download_from_web_video_file(useproxy, tmp_path):
+@pytest.mark.parametrize("useproxy_for_download", [False])
+def test_download_from_web_video_file(tmp_path, useproxy, useproxy_for_download):
     """
     Test for functionality required by download_from_web for WebVideoFile processing.
     """
     for youtube_url in [subtitles_video, subtitles_zu_video]:
+        download_ext = ".{ext}".format(ext=file_formats.MP4)
+        destination_path = os.path.join(tmp_path, youtube_url[-11:] + download_ext)
+
         # STEP 1: get_resource_info via proxy
         settings = {}
         maxheight = 480
         settings['format'] = "bestvideo[height<={maxheight}][ext=mp4]+bestaudio[ext=m4a]/best[height<={maxheight}][ext=mp4]".format(maxheight=maxheight)
+        settings['outtmpl'] = destination_path
         yt_resource = youtube.YouTubeResource(youtube_url, useproxy=useproxy, options=settings)
         video_node1 = yt_resource.get_resource_info()
         assert video_node1, 'no data returned'
 
-        # STEP 2: download raw
-        download_ext = ".{ext}".format(ext=file_formats.MP4)
-        destination_path = os.path.join(tmp_path, "temporaryfile" + download_ext)
-        download_settings = {
-            "outtmpl": destination_path,
-            "writethumbnail": False
-        }
-        video_node2 = yt_resource.download(options=download_settings)
+        # STEP 2: download
+        # overwrite default download behaviour by setting custom options
+        download_settings = {}
+        download_settings["writethumbnail"] = False
+        download_settings["outtmpl"] = destination_path
+        video_node2 = yt_resource.download(options=download_settings, useproxy=useproxy_for_download)
         assert os.path.exists(destination_path), 'Missing video file'
 
 
 @pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
 @pytest.mark.parametrize("useproxy", [True, False])
-def test_download_from_web_subtitle_file(useproxy, tmp_path):
+@pytest.mark.parametrize("useproxy_for_download", [False])
+def test_download_from_web_subtitle_file(tmp_path, useproxy, useproxy_for_download):
     """
     Use YouTubeResource the same way YouTubeSubtitleFile when proxy is enabled.
     """
     for youtube_url, lang in [(subtitles_video,'ru'), (subtitles_zu_video, 'zu')]:
+        destination_path_noext = os.path.join(tmp_path, youtube_url[-11:])
+        download_ext = ".{lang}.{ext}".format(lang=lang, ext=file_formats.VTT)
+        destination_path = destination_path_noext + download_ext
+
         # STEP 1: get_resource_info
         settings = {
+            'outtmpl': destination_path_noext, # note no ext -- YoutubeDL will auto append it,
             'skip_download': True,
             'writesubtitles': True,
             'subtitleslangs': [lang],
@@ -207,8 +216,6 @@ def test_download_from_web_subtitle_file(useproxy, tmp_path):
             'verbose': True,
             'no_warnings': True
         }
-        kwargs = {}
-        kwargs['useproxy'] = True
         web_url = youtube_url
         yt_resource = youtube.YouTubeResource(web_url, useproxy=useproxy, options=settings)
         video_node = yt_resource.get_resource_info()
@@ -216,14 +223,10 @@ def test_download_from_web_subtitle_file(useproxy, tmp_path):
         assert video_node['subtitles'], 'missing subtitles key'
 
         # STEP 2: download
-        destination_path_noext = os.path.join(tmp_path, "temporaryfile")
-        download_settings = {
-            "outtmpl": destination_path_noext,  # note no ext -- YoutubeDL will auto append it
-            "writethumbnail": False
-        }
-        download_ext = ".{lang}.{ext}".format(lang=lang, ext=file_formats.VTT)
-        destination_path = destination_path_noext + download_ext
-        yt_resource.download(options=download_settings)
+        # overwrite default download behaviour by setting custom options
+        download_settings = {}
+        download_settings["writethumbnail"] = False
+        download_settings["outtmpl"] = destination_path_noext
+        yt_resource.download(options=download_settings, useproxy=useproxy_for_download)
         # checks for STEP 2
         assert os.path.exists(destination_path), 'Missing subtitles file'
-

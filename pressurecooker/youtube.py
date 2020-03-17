@@ -149,11 +149,6 @@ class YouTubeResource(object):
         if self.client is None or self.info is None:
             self.get_resource_info()
 
-        if not useproxy:
-            # Disable proxy for faster downloads (default behaviour)
-            self.client.params['proxy'] = None
-            self.client._setup_opener()  # this will re-initialize downloader
-
         # Set standard download options
         self.client.params['outtmpl'] = '{}/%(id)s.%(ext)s'.format(download_dir)
         self.client.params['writethumbnail'] = True
@@ -164,11 +159,26 @@ class YouTubeResource(object):
 
         LOGGER.info("Downloading {} to dir {}".format(self.url, download_dir))
         for i in range(self.num_retries):
+
+            # Proxy configuration for downloading (by default we don't use proxy)
+            if useproxy:
+                # If useproxy ovverride specified, we choose a new proxy server
+                dl_proxy = proxy.choose_proxy()
+                self.client.params['proxy'] = dl_proxy
+                self.client._setup_opener()  # this will re-initialize downloader
+            elif not useproxy and 'proxy' in self.client.params and self.client.params['proxy']:
+                # Disable proxy for faster downloads (default behaviour)
+                self.client.params['proxy'] = None
+                self.client._setup_opener()  # this will re-initialize downloader
+
             try:
                 self.info = self.client.process_ie_result(self.info, download=True)
                 print('Finished process_ie_result successfully')
                 break
             except Exception as e:
+                if useproxy:
+                    # Add the current proxy to the BROKEN_PROXIES list
+                    proxy.add_to_broken_proxy_list(dl_proxy)
                 LOGGER.warning(e)
                 if i < self.num_retries - 1:
                     LOGGER.warning("Dowload {} failed, retrying...".format(i+1))
@@ -176,6 +186,7 @@ class YouTubeResource(object):
                     time.sleep(sleep_seconds)
 
         # Post-process results
+        # TODO(ivan): handle post processing filename when custom `outtmpl` specified in options
         if self.info:
             edited_results = self._format_for_ricecooker(self.info)
             if 'children' in edited_results:
