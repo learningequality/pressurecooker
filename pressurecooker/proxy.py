@@ -42,8 +42,9 @@ def get_sslproxies_proxies():
 def get_proxies(refresh=False):
     global PROXY_LIST
     if os.getenv('PROXY_LIST', None):
-        get_env_proxies()  # (re)load ;-spearated proxy list specified as ENV var
-    if len(PROXY_LIST) == 0 or refresh:
+        get_env_proxies()    # (re)load ;-spearated proxy list given as ENV var
+        reset_broken_proxy_list()
+    if len(PROXY_LIST) == 0 or (refresh and os.getenv('PROXY_LIST', None) is None):
         PROXY_LIST = get_proxyscape_proxies()
 
     return PROXY_LIST
