@@ -9,13 +9,18 @@ RECENT_PROXIES = []         # Recently used proxies (to avoid using too often)
 BROKEN_PROXIES = []         # Known-bad proxies (we want to void choosing these)
 RECENT_MAX = 3
 
+
+def get_env_proxies():
+    """Set PROXY_LIST from ENV variable (a ;-sparated list of proxies)"""
+    global PROXY_LIST
+    proxy_list_env_var = os.getenv('PROXY_LIST', None)
+    if proxy_list_env_var:
+        PROXY_LIST = proxy_list_env_var.split(';')
+
 # Proxy settings that can be conrolled via ENV variables
 PROXY_TIMOUT_LIMIT = os.getenv('PROXY_TIMOUT_LIMIT', "2000")
-proxy_list_env_var = os.getenv('PROXY_LIST', None)
-if proxy_list_env_var:
-    # Manually set PROXY_LIST from ENV variable (a ;-sparated list of proxies)
-    PROXY_LIST = proxy_list_env_var.split(';')
-
+if os.getenv('PROXY_LIST', None):
+    get_env_proxies()  # load ;-spearated proxy list given as ENV variable
 
 def get_proxyscape_proxies():
     """Loads a list of `{ip_address}:{port}` for public proxy servers."""
@@ -36,6 +41,8 @@ def get_sslproxies_proxies():
 
 def get_proxies(refresh=False):
     global PROXY_LIST
+    if os.getenv('PROXY_LIST', None):
+        get_env_proxies()  # (re)load ;-spearated proxy list specified as ENV var
     if len(PROXY_LIST) == 0 or refresh:
         PROXY_LIST = get_proxyscape_proxies()
 
