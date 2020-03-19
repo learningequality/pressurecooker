@@ -34,7 +34,7 @@ class YouTubeResource(object):
     of YouTube resources. Resources may include videos, playlists and channels.
     """
     # If extract_info request takes longer than this we treat it as broken proxy
-    EXTRACT_TIME_SLOW_LIMIT = 40  # in seconds
+    EXTRACT_TIME_SLOW_LIMIT = 20  # in seconds
 
     def __init__(self, url, useproxy=True, high_resolution=False, options=None):
         """
@@ -111,13 +111,14 @@ class YouTubeResource(object):
                 edited_results = self._format_for_ricecooker(self.info)
                 return edited_results
 
-            except youtube_dl.utils.ExtractorError as e:
-                # Skip private videos "Content Warning If the owner of this video has granted..."
-                LOGGER.warning(e)
-                time.sleep(self.sleep_seconds)
-
             except Exception as e:
-                if self.useproxy:
+                network_related_error = True
+                if isinstance(e, youtube_dl.utils.DownloadError):
+                    (eclass, evalue, etraceback) = e.exc_info
+                    if eclass == youtube_dl.utils.ExtractorError:
+                        # private videos: "Content Warning If the owner of this video has granted..."
+                        network_related_error = False
+                if self.useproxy and network_related_error:
                     # Add the current proxy to the BROKEN_PROXIES list
                     proxy.record_error_for_proxy(dl_proxy, exception=e)
                 LOGGER.warning(e)
@@ -188,10 +189,11 @@ class YouTubeResource(object):
                 if useproxy:
                     # Add the current proxy to the BROKEN_PROXIES list
                     proxy.record_error_for_proxy(dl_proxy, exception=e)
-                downloaded_filename = self.client.prepare_filename(self.info)
-                if os.path.exists(downloaded_filename):
-                    # cleanup partially downloaded file to make sure clean start
-                    os.remove(downloaded_filename)
+                if self.info:
+                    # cleanup partially downloaded file to get a clean start
+                    download_filename = self.client.prepare_filename(self.info)
+                    if os.path.exists(download_filename):
+                        os.remove(download_filename)
                 LOGGER.warning(e)
                 if i < self.num_retries - 1:
                     LOGGER.warning("Download {} failed, retrying...".format(i+1))
