@@ -47,6 +47,7 @@ class YouTubeResource(object):
         self.url = url
         self.subtitles = {}
         self.num_retries = 10
+        self.sleep_seconds = 0.5
         self.preferred_formats = {
             'video': 'mp4',
             'audio': 'm4a'
@@ -110,6 +111,11 @@ class YouTubeResource(object):
                 edited_results = self._format_for_ricecooker(self.info)
                 return edited_results
 
+            except youtube_dl.utils.ExtractorError as e:
+                # Skip private videos "Content Warning If the owner of this video has granted..."
+                LOGGER.warning(e)
+                time.sleep(self.sleep_seconds)
+
             except Exception as e:
                 if self.useproxy:
                     # Add the current proxy to the BROKEN_PROXIES list
@@ -117,8 +123,7 @@ class YouTubeResource(object):
                 LOGGER.warning(e)
                 if i < self.num_retries - 1:
                     LOGGER.warning("Info extraction failed, retrying...")
-                    sleep_seconds = .5
-                    time.sleep(sleep_seconds)
+                    time.sleep(self.sleep_seconds)
 
 
     def get_dir_name_from_url(self, url=None):
@@ -190,8 +195,7 @@ class YouTubeResource(object):
                 LOGGER.warning(e)
                 if i < self.num_retries - 1:
                     LOGGER.warning("Download {} failed, retrying...".format(i+1))
-                    sleep_seconds = .5
-                    time.sleep(sleep_seconds)
+                    time.sleep(self.sleep_seconds)
 
         # Post-process results
         # TODO(ivan): handle post processing filename when custom `outtmpl` specified in options
