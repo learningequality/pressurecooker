@@ -147,41 +147,48 @@ class YouTubeResource(object):
             download_dir = '.'
 
         if self.client is None or self.info is None:
+            # download should always be called after self.info is available
             self.get_resource_info()
 
-        # Set standard download options
+        # Set reasonable default download options...
         self.client.params['outtmpl'] = '{}/%(id)s.%(ext)s'.format(download_dir)
-        self.client.params['writethumbnail'] = True
+        self.client.params['writethumbnail'] = True  # TODO(ivan): revisit this
+        self.client.params['continuedl'] = False  # clean start to avoid errors
+        self.client.params['noprogress'] = True   # progressbar doesn't log well
         if options:
+            # ...but override them based on user choices when specified
             self.client.params.update(options)
         LOGGER.debug("Using download options = {}".format(self.client.params))
-
 
         LOGGER.info("Downloading {} to dir {}".format(self.url, download_dir))
         for i in range(self.num_retries):
 
-            # Proxy configuration for downloading (by default we don't use proxy)
+            # Proxy configuration for download (default = no proxy)
             if useproxy:
-                # If useproxy ovverride specified, we choose a new proxy server
+                # If useproxy ovverride specified, choose a new proxy server:
                 dl_proxy = proxy.choose_proxy()
                 self.client.params['proxy'] = dl_proxy
                 self.client._setup_opener()  # this will re-initialize downloader
             elif not useproxy and 'proxy' in self.client.params and self.client.params['proxy']:
-                # Disable proxy for faster downloads (default behaviour)
+                # Disable proxy if it was used for the get_resource_info call
                 self.client.params['proxy'] = None
                 self.client._setup_opener()  # this will re-initialize downloader
 
             try:
                 self.info = self.client.process_ie_result(self.info, download=True)
-                print('Finished process_ie_result successfully')
+                LOGGER.debug('Finished process_ie_result successfully')
                 break
             except Exception as e:
                 if useproxy:
                     # Add the current proxy to the BROKEN_PROXIES list
                     proxy.add_to_broken_proxy_list(dl_proxy)
+                downloaded_filename = self.client.prepare_filename(self.info)
+                if os.path.exists(downloaded_filename):
+                    # cleanup partially downloaded file to make sure clean start
+                    os.remove(downloaded_filename)
                 LOGGER.warning(e)
                 if i < self.num_retries - 1:
-                    LOGGER.warning("Dowload {} failed, retrying...".format(i+1))
+                    LOGGER.warning("Download {} failed, retrying...".format(i+1))
                     sleep_seconds = .5
                     time.sleep(sleep_seconds)
 
