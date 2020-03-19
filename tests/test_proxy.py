@@ -1,7 +1,4 @@
 import os
-import shutil
-import sys
-import tempfile
 
 import pytest
 
@@ -22,9 +19,10 @@ def test_bad_proxies_get_banned(tmp_path):
         '123.123.123.123:1234',
         '142.123.1.234:123345',
         '156.245.233.211:12323',
+        '11.22.33.44:123',
     ]
     # initialize PROXY_LIST to known-bad proxies to check that they get banned
-    proxy.PROXY_LIST = FAKE_PROXIES
+    proxy.PROXY_LIST = FAKE_PROXIES.copy()
 
     video = YouTubeResource(YOUTUBE_TEST_VIDEO)
     video.download(tmp_path)

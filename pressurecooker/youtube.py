@@ -65,8 +65,9 @@ class YouTubeResource(object):
         :return: A ricecooker-like dict of info about the channel, playlist or video.
         """
         extract_info_options = dict(
-            verbose = True,
+            verbose = True,  # TODO(ivan) change this to quiet = True eventually
             no_warnings = True,
+            no_color = True,
             # By default, YouTubeDL will pick what it determines to be the best formats, but for consistency's sake
             # we want to always get preferred formats (default of mp4 and m4a) when possible.
             format = "bestvideo[height<={maxheight}][ext={vext}]+bestaudio[ext={aext}]/best[height<={maxheight}][ext={vext}]".format(
@@ -102,8 +103,8 @@ class YouTubeResource(object):
                     if 'entries' in self.info:
                         pass  # it's OK for extract_info to be slow for playlists
                     else:
-                        proxy.add_to_broken_proxy_list(dl_proxy)
-                        LOGGER.info("Added slow proxy {} to BROKEN_PROXIES".format(dl_proxy))
+                        proxy.record_error_for_proxy(dl_proxy, exception='extract_info took ' + extract_time + ' seconds')
+                        LOGGER.info("Found slow proxy {}".format(dl_proxy))
 
                 # Format info JSON into ricecooker-like keys
                 edited_results = self._format_for_ricecooker(self.info)
@@ -112,10 +113,10 @@ class YouTubeResource(object):
             except Exception as e:
                 if self.useproxy:
                     # Add the current proxy to the BROKEN_PROXIES list
-                    proxy.add_to_broken_proxy_list(dl_proxy)
+                    proxy.record_error_for_proxy(dl_proxy, exception=e)
                 LOGGER.warning(e)
                 if i < self.num_retries - 1:
-                    LOGGER.warning("Infor extraction failed, retrying...")
+                    LOGGER.warning("Info extraction failed, retrying...")
                     sleep_seconds = .5
                     time.sleep(sleep_seconds)
 
@@ -181,7 +182,7 @@ class YouTubeResource(object):
             except Exception as e:
                 if useproxy:
                     # Add the current proxy to the BROKEN_PROXIES list
-                    proxy.add_to_broken_proxy_list(dl_proxy)
+                    proxy.record_error_for_proxy(dl_proxy, exception=e)
                 downloaded_filename = self.client.prepare_filename(self.info)
                 if os.path.exists(downloaded_filename):
                     # cleanup partially downloaded file to make sure clean start
