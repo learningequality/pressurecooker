@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 import logging
 import os
 import sys
@@ -8,10 +9,11 @@ from le_utils.constants import languages
 
 import youtube_dl
 
+from . import proxy
 from . import utils
 
 LOGGER = logging.getLogger("YouTubeResource")
-
+LOGGER.setLevel(logging.DEBUG)
 
 
 def get_youtube_info(youtube_url):
@@ -26,65 +28,104 @@ def get_youtube_info(youtube_url):
     return resource.get_resource_info()
 
 
-class YouTubeResource:
+class YouTubeResource(object):
     """
-    This class encapsulates functionality related to information retrieval and download of YouTube resources.
-    Resources may include videos, playlists and channels.
+    This class encapsulates functionality for information retrieval and download
+    of YouTube resources. Resources may include videos, playlists and channels.
     """
-    def __init__(self, url):
+    # If extract_info request takes longer than this we treat it as broken proxy
+    EXTRACT_TIME_SLOW_LIMIT = 20  # in seconds
+
+    def __init__(self, url, useproxy=True, high_resolution=False, options=None):
         """
         Initializes the YouTube resource, and calls the get_resource_info method to retrieve resource information.
 
         :param url: URL of a YouTube resource. URL may point to a video, playlist or channel.
         """
-
         if not 'youtube.com' in url and not 'youtu.be' in url:
             raise utils.VideoURLFormatError(url, 'YouTube')
         self.url = url
         self.subtitles = {}
-        self.num_retries = 3
+        self.num_retries = 10
+        self.sleep_seconds = 0.5
         self.preferred_formats = {
             'video': 'mp4',
             'audio': 'm4a'
         }
-        self.get_resource_info()
+        self.useproxy = useproxy
+        self.high_resolution = high_resolution
+        self.options = options
+        self.client = None  # this will become a YoutubeDL instance on first use
+        self.info = None    # save detailed info_dict returned from extract_info
 
-    def get_resource_info(self, filter=True, download_dir=None):
+
+    def get_resource_info(self, options=None):
         """
         This method checks the YouTube URL, then returns a dictionary object with info about the video(s) in it.
 
-        :param download_dir: If set, downloads videos to the specified directory. Defaults to None.
-
-        :return: A dictionary object containing information about the channel, playlist or video.
+        :return: A ricecooker-like dict of info about the channel, playlist or video.
         """
-
-        options = dict(
-            verbose = True,
+        extract_info_options = dict(
+            verbose = True,  # TODO(ivan) change this to quiet = True eventually
             no_warnings = True,
-            outtmpl = '{}/%(id)s.%(ext)s'.format(download_dir),
-            # by default, YouTubeDL will pick what it determines to be the best formats, but for consistency's sake
+            no_color = True,
+            # By default, YouTubeDL will pick what it determines to be the best formats, but for consistency's sake
             # we want to always get preferred formats (default of mp4 and m4a) when possible.
-            # TODO: Add customization for video dimensions
-            format = "bestvideo[height<=720][ext={}]+bestaudio[ext={}]/best[height<=720][ext={}]".format(
-                self.preferred_formats['video'], self.preferred_formats['audio'], self.preferred_formats['video']
+            format = "bestvideo[height<={maxheight}][ext={vext}]+bestaudio[ext={aext}]/best[height<={maxheight}][ext={vext}]".format(
+                maxheight=720 if self.high_resolution else 480,
+                vext=self.preferred_formats['video'],
+                aext=self.preferred_formats['audio']
             ),
-            writethumbnail = download_dir is not None
         )
-        LOGGER.info("Download options = {}".format(options))
-        client = youtube_dl.YoutubeDL(options)
-        results = client.extract_info(self.url, download=(download_dir is not None), process=True)
 
-        keys = list(results.keys())
-        keys.sort()
-        if not filter:
-            return results
+        for i in range(self.num_retries):
+            if self.useproxy:
+                dl_proxy = proxy.choose_proxy()
+                extract_info_options['proxy'] = dl_proxy
+            if self.options:
+                extract_info_options.update(self.options)  # init-time options
+            if options:
+                extract_info_options.update(options)       # additional options
 
-        edited_results = self._format_for_ricecooker(results)
+            try:
+                LOGGER.debug("YoutubeDL options = {}".format(extract_info_options))
+                self.client = youtube_dl.YoutubeDL(extract_info_options)
+                self.client.add_default_info_extractors()
 
-        edited_keys = list(edited_results.keys())
-        edited_keys.sort()
+                LOGGER.debug("Calling extract_info for URL {}".format(self.url))
+                start_time = datetime.now()
+                self.info = self.client.extract_info(self.url, download=False, process=True)
+                end_time = datetime.now()
 
-        return edited_results
+                # Mark slow proxies as broken
+                extract_time = (end_time - start_time).total_seconds()
+                LOGGER.debug('extract_time = ' + str(extract_time))
+                if self.useproxy and extract_time > self.EXTRACT_TIME_SLOW_LIMIT:
+                    if 'entries' in self.info:
+                        pass  # it's OK for extract_info to be slow for playlists
+                    else:
+                        proxy.record_error_for_proxy(dl_proxy, exception='extract_info took ' + extract_time + ' seconds')
+                        LOGGER.info("Found slow proxy {}".format(dl_proxy))
+
+                # Format info JSON into ricecooker-like keys
+                edited_results = self._format_for_ricecooker(self.info)
+                return edited_results
+
+            except Exception as e:
+                network_related_error = True
+                if isinstance(e, youtube_dl.utils.DownloadError):
+                    (eclass, evalue, etraceback) = e.exc_info
+                    if eclass == youtube_dl.utils.ExtractorError:
+                        # private videos: "Content Warning If the owner of this video has granted..."
+                        network_related_error = False
+                if self.useproxy and network_related_error:
+                    # Add the current proxy to the BROKEN_PROXIES list
+                    proxy.record_error_for_proxy(dl_proxy, exception=e)
+                LOGGER.warning(e)
+                if i < self.num_retries - 1:
+                    LOGGER.warning("Info extraction failed, retrying...")
+                    time.sleep(self.sleep_seconds)
+
 
     def get_dir_name_from_url(self, url=None):
         """
@@ -99,44 +140,100 @@ class YouTubeResource:
         name = name.split("?")[0]
         return " ".join(name.split("_")).title()
 
-    def download(self, base_path=None):
-        download_dir = utils.make_dir_if_needed(os.path.join(base_path, self.get_dir_name_from_url()))
-        LOGGER.debug("download_dir = {}".format(download_dir))
-        for i in range(self.num_retries):
-            try:
-                info = self.get_resource_info(filter=True, download_dir=download_dir)
-                if 'children' in info:
-                    for child in info['children']:
-                        child['filename'] = os.path.join(download_dir, "{}.{}".format(child["id"], child['ext']))
-                else:
-                    info['filename'] =  os.path.join(download_dir, "{}.{}".format(info["id"], info['ext']))
-                return info
-            except (youtube_dl.utils.DownloadError, youtube_dl.utils.ContentTooShortError,
-                    youtube_dl.utils.ExtractorError, OSError) as e:
-                LOGGER.info("    + An error ocurred, may be the video is not available.")
-                print("YouTube error")
-                break
-            except (ValueError, IOError, OSError) as e:
-                LOGGER.info(e)
-                LOGGER.info("Download retry")
-                sleep_seconds = .5
-                time.sleep(sleep_seconds)
-            except OSError:
-                print("OS Error")
-                break
 
-        return None
-
-    def get_resource_subtitles(self):
+    def download(self, base_path=None, useproxy=False, options=None):
         """
-        Retrieves the subtitles for the video(s) represented by this resource. Subtitle information will be
-        contained in the 'subtitles' key of the dictionary object returned.
+        Download the YouTube resource(s) specified in `self.info`. If `self.info`
+        is None, it will be populated by calling `self.get_resource_info` which
+        in turn uses `self.url`. Returns None if download fails.
+        """
+        if base_path:
+            download_dir = os.path.join(base_path, self.get_dir_name_from_url())
+            utils.make_dir_if_needed(download_dir)
+        else:
+            download_dir = '.'
+
+        if self.client is None or self.info is None:
+            # download should always be called after self.info is available
+            self.get_resource_info()
+
+        # Set reasonable default download options...
+        self.client.params['outtmpl'] = '{}/%(id)s.%(ext)s'.format(download_dir)
+        self.client.params['writethumbnail'] = True  # TODO(ivan): revisit this
+        self.client.params['continuedl'] = False  # clean start to avoid errors
+        self.client.params['noprogress'] = True   # progressbar doesn't log well
+        if options:
+            # ...but override them based on user choices when specified
+            self.client.params.update(options)
+        LOGGER.debug("Using download options = {}".format(self.client.params))
+
+        LOGGER.info("Downloading {} to dir {}".format(self.url, download_dir))
+        for i in range(self.num_retries):
+
+            # Proxy configuration for download (default = no proxy)
+            if useproxy:
+                # If useproxy ovverride specified, choose a new proxy server:
+                dl_proxy = proxy.choose_proxy()
+                self.client.params['proxy'] = dl_proxy
+                self.client._setup_opener()  # this will re-initialize downloader
+            elif not useproxy and 'proxy' in self.client.params and self.client.params['proxy']:
+                # Disable proxy if it was used for the get_resource_info call
+                self.client.params['proxy'] = None
+                self.client._setup_opener()  # this will re-initialize downloader
+
+            try:
+                self.info = self.client.process_ie_result(self.info, download=True)
+                LOGGER.debug('Finished process_ie_result successfully')
+                break
+            except Exception as e:
+                if useproxy:
+                    # Add the current proxy to the BROKEN_PROXIES list
+                    proxy.record_error_for_proxy(dl_proxy, exception=e)
+                if self.info:
+                    # cleanup partially downloaded file to get a clean start
+                    download_filename = self.client.prepare_filename(self.info)
+                    if os.path.exists(download_filename):
+                        os.remove(download_filename)
+                LOGGER.warning(e)
+                if i < self.num_retries - 1:
+                    LOGGER.warning("Download {} failed, retrying...".format(i+1))
+                    time.sleep(self.sleep_seconds)
+
+        # Post-process results
+        # TODO(ivan): handle post processing filename when custom `outtmpl` specified in options
+        if self.info:
+            edited_results = self._format_for_ricecooker(self.info)
+            if 'children' in edited_results:
+                for child in edited_results['children']:
+                    vfilename = "{}.{}".format(child["id"], child['ext'])
+                    child['filename'] = os.path.join(download_dir, vfilename)
+            else:
+                vfilename = "{}.{}".format(edited_results["id"], edited_results['ext'])
+                edited_results['filename'] = os.path.join(download_dir, vfilename)
+            return edited_results
+        else:
+            return None
+
+
+    def get_resource_subtitles(self, options=None):
+        """
+        Retrieves the subtitles for the video(s) represented by this resource.
+        Subtitle information will be contained in the 'subtitles' key of the
+        dictionary object returned.
 
         :return: A dictionary object that contains information about video subtitles
         """
-        client = youtube_dl.YoutubeDL(dict(verbose=True, no_warnings=True, writesubtitles=True, allsubtitles=True))
-        results = client.extract_info(self.url, download=False, process=True)
-        return results
+        options_for_subtitles = dict(
+            writesubtitles = True,      # extract subtitles info
+            allsubtitles = True,        # get all available languages
+            writeautomaticsub = False,  # do not include auto-generated subs
+        )
+        if options:
+            options_for_subtitles.update(options)
+
+        info = self.get_resource_info(options=options_for_subtitles)
+        return info
+
 
     def _format_for_ricecooker(self, results):
         """
@@ -181,9 +278,10 @@ class YouTubeResource:
                 if entry is not None:
                     leaf['children'].append(self._format_for_ricecooker(entry))
                 else:
-                    print("Entry is none?")
+                    LOGGER.info("Skipping None entry bcs failed extract info")
 
         return leaf
+
 
     def check_for_content_issues(self, filter=False):
         """
@@ -215,6 +313,10 @@ class YouTubeResource:
         return videos_with_warnings, output_video_info
 
 
+
+
+# YOUTUBE LANGUAGE CODE HELPERS
+################################################################################
 
 def get_language_with_alpha2_fallback(language_code):
     """
@@ -266,7 +368,7 @@ if __name__ == "__main__":
         print("Downloading videos...")
         yt_resource.download(base_path=download_dir)
     else:
-        info = yt_resource.get_resource_info(download_dir=download_dir)
+        info = yt_resource.get_resource_info()
         if check:
             warnings, out_info = yt_resource.check_for_content_issues()
             for warning in warnings:

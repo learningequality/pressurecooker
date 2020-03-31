@@ -10,9 +10,11 @@ pytestmark = pytest.mark.skipif(IS_TRAVIS_TESTING, reason="Skip YouTube tests on
 
 from pressurecooker import utils
 from pressurecooker import youtube
+from le_utils.constants import file_formats
 
 trees = {}
 yt_resources = {}
+USE_PROXY_FOR_TESTS = False
 
 cc_playlist = 'https://www.youtube.com/playlist?list=PL7m903CwFUgntbjkVMwts89fZq0INCtVS'
 non_cc_playlist = 'https://www.youtube.com/playlist?list=PLBO8M-O_dTPE51ymDUgilf8DclGAEg9_A'
@@ -20,10 +22,15 @@ subtitles_video = 'https://www.youtube.com/watch?v=6uXAbJQoZlE'
 subtitles_zu_video = 'https://www.youtube.com/watch?v=FN12ty5ztAs'
 
 
-def get_yt_resource(url):
+def get_yt_resource(url, **kwargs):
     global yt_resources
     if not url in yt_resources:
-        yt_resources[url] = youtube.YouTubeResource(url)
+        if 'useproxy' not in kwargs:
+            if USE_PROXY_FOR_TESTS:
+                kwargs['useproxy'] = True
+            else:
+                kwargs['useproxy'] = False
+        yt_resources[url] = youtube.YouTubeResource(url, **kwargs)
 
     return yt_resources[url]
 
@@ -145,3 +152,81 @@ def test_subtitles_lang_helpers_incompatible():
     assert verdict1 == False, 'Failed to reject incompatible youtube_language'
     verdict2 = youtube.is_youtube_subtitle_file_supported_language('zzz')
     assert verdict2 == False, 'Failed to reject incompatible youtube_language'
+
+
+def test_repeated_calls_to_get_resource_info():
+    """
+    Ensure `is_youtube_subtitle_file_supported_language` rejects unknown language codes.
+    """
+    yt_resource = get_yt_resource(subtitles_video)
+    info1 = yt_resource.get_resource_info()
+    info2 = yt_resource.get_resource_info()
+    assert info1 == info2, 'get_resource_info returned different results on second call'
+
+
+@pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
+@pytest.mark.parametrize("useproxy", [True, False])
+@pytest.mark.parametrize("useproxy_for_download", [False])
+def test_download_from_web_video_file(tmp_path, useproxy, useproxy_for_download):
+    """
+    Test for functionality required by download_from_web for WebVideoFile processing.
+    """
+    for youtube_url in [subtitles_video, subtitles_zu_video]:
+        download_ext = ".{ext}".format(ext=file_formats.MP4)
+        destination_path = os.path.join(tmp_path, youtube_url[-11:] + download_ext)
+
+        # STEP 1: get_resource_info via proxy
+        settings = {}
+        maxheight = 480
+        settings['format'] = "bestvideo[height<={maxheight}][ext=mp4]+bestaudio[ext=m4a]/best[height<={maxheight}][ext=mp4]".format(maxheight=maxheight)
+        settings['outtmpl'] = destination_path
+        yt_resource = youtube.YouTubeResource(youtube_url, useproxy=useproxy, options=settings)
+        video_node1 = yt_resource.get_resource_info()
+        assert video_node1, 'no data returned'
+
+        # STEP 2: download
+        # overwrite default download behaviour by setting custom options
+        download_settings = {}
+        download_settings["writethumbnail"] = False
+        download_settings["outtmpl"] = destination_path
+        video_node2 = yt_resource.download(options=download_settings, useproxy=useproxy_for_download)
+        assert os.path.exists(destination_path), 'Missing video file'
+
+
+@pytest.mark.skipif(not 'PYTEST_RUN_SLOW' in os.environ, reason="This test can take several minutes to complete.")
+@pytest.mark.parametrize("useproxy", [True, False])
+@pytest.mark.parametrize("useproxy_for_download", [False])
+def test_download_from_web_subtitle_file(tmp_path, useproxy, useproxy_for_download):
+    """
+    Use YouTubeResource the same way YouTubeSubtitleFile when proxy is enabled.
+    """
+    for youtube_url, lang in [(subtitles_video,'ru'), (subtitles_zu_video, 'zu')]:
+        destination_path_noext = os.path.join(tmp_path, youtube_url[-11:])
+        download_ext = ".{lang}.{ext}".format(lang=lang, ext=file_formats.VTT)
+        destination_path = destination_path_noext + download_ext
+
+        # STEP 1: get_resource_info
+        settings = {
+            'outtmpl': destination_path_noext, # note no ext -- YoutubeDL will auto append it,
+            'skip_download': True,
+            'writesubtitles': True,
+            'subtitleslangs': [lang],
+            'subtitlesformat': "best[ext={}]".format(file_formats.VTT),
+            'quiet': True,
+            'verbose': True,
+            'no_warnings': True
+        }
+        web_url = youtube_url
+        yt_resource = youtube.YouTubeResource(web_url, useproxy=useproxy, options=settings)
+        video_node = yt_resource.get_resource_info()
+        # checks for STEP 1
+        assert video_node['subtitles'], 'missing subtitles key'
+
+        # STEP 2: download
+        # overwrite default download behaviour by setting custom options
+        download_settings = {}
+        download_settings["writethumbnail"] = False
+        download_settings["outtmpl"] = destination_path_noext
+        yt_resource.download(options=download_settings, useproxy=useproxy_for_download)
+        # checks for STEP 2
+        assert os.path.exists(destination_path), 'Missing subtitles file'

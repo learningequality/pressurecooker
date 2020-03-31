@@ -102,4 +102,8 @@ ENV/
 # IntelliJ IDE (PyCharm)
 .idea/
 
+# vscode Project settings
+.vscode
+
+# Vim
 *.swp
