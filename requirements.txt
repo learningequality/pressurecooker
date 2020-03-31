@@ -3,7 +3,7 @@ ffmpy>=0.2.2
 le-utils>=0.1.24
 matplotlib==2.2.3
 numpy==1.15.4
-Pillow==5.4.1
+Pillow==6.2.0
 youtube-dl>=2020.1.24
 pdf2image==1.11.0
 le-pycaption>=2.1.0a2
