@@ -49,7 +49,7 @@ def load_broken_proxies_cache():
         return []
     mtime = os.path.getmtime(BROKEN_PROXIES_CACHE_FILENAME)
     if (time.time() - mtime) > 60*BROKEN_CACHE_EXPIRE_MINS:
-        os.path.remove(BROKEN_PROXIES_CACHE_FILENAME)
+        os.remove(BROKEN_PROXIES_CACHE_FILENAME)
         return []
     broken_proxies = []
     with open(BROKEN_PROXIES_CACHE_FILENAME, 'r') as bpl_file:
