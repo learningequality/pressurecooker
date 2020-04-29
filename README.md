@@ -13,6 +13,13 @@ A library of various media processing functions and utilities
 * [Install poppler-utils](https://poppler.freedesktop.org/) if you don't have it already
 
 
+## TODO for youtube v2
+ - cache json info
+ - To handle ExtractorError as permanent failure (do not try to download repeatedly)
+ - New "lightweight" playlist downloader based on `extract_flat`
+ - New get-all-subs for `youtube_id` helper that uses API (if token present) and youtube-dl as fallback
+
+
 ## Converting caption files
 The `pressurecooker` library contains utilities for converting caption files from a few various
 formats into the preferred `VTT` format. The currently supported formats include:
@@ -109,4 +116,6 @@ for lang_code in converter.get_language_codes():
     elif lang_code == LANGUAGE_CODE_UNKNOWN:
         raise InvalidSubtitleLanguageError('Unexpected unknown language')
 ```
+
+
 
