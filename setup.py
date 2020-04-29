@@ -9,15 +9,15 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    "beautifulsoup4>=4.6.3",
     "ffmpy>=0.2.2",
     "le-utils>=0.1.24",
-    "matplotlib==2.2.3",    # the last with py27 support
-    "numpy==1.15.4",        # pinned to avoid surprizes
-    "Pillow==5.4.1",        # pinned to avoid surprizes
+    "matplotlib==2.2.3",            # the last with py27 support
+    "numpy==1.15.4",                # pinned to avoid surprizes (nothing specific)
+    "Pillow==5.4.1",                # pinned to avoid surprizes (nothing specific)
     "youtube-dl>=2020.3.24",
-    "pdf2image==1.11.0",    # pinned because py2.7 problems in 1.12.1
+    "pdf2image==1.11.0",            # pinned because py2.7 problems in 1.12.1
     "le-pycaption>=2.2.0a1",
+    "beautifulsoup4>=4.6.3,<4.9.0", # pinned to match versions in le-pycaption
     "EbookLib>=0.17.1",
 ]
 if sys.version_info < (3, 0, 0):
