@@ -15,9 +15,9 @@ requirements = [
     "matplotlib==2.2.3",    # the last with py27 support
     "numpy==1.15.4",        # pinned to avoid surprizes
     "Pillow==5.4.1",        # pinned to avoid surprizes
-    "youtube-dl>=2020.1.24",
+    "youtube-dl>=2020.3.24",
     "pdf2image==1.11.0",    # pinned because py2.7 problems in 1.12.1
-    "le-pycaption>=2.1.0a2",
+    "le-pycaption>=2.2.0a1",
     "EbookLib>=0.17.1",
 ]
 if sys.version_info < (3, 0, 0):
