@@ -191,7 +191,12 @@ class YouTubeResource(object):
                 LOGGER.debug('Finished process_ie_result successfully')
                 break
             except Exception as e:
-                if useproxy:
+                network_related_error = True
+                if isinstance(e, youtube_dl.utils.DownloadError):
+                    (eclass, evalue, etraceback) = e.exc_info
+                    if eclass in NON_NETWORK_ERRORS:
+                        network_related_error = False
+                if useproxy and network_related_error:
                     # Add the current proxy to the BROKEN_PROXIES list
                     proxy.record_error_for_proxy(dl_proxy, exception=e)
                 if self.info:
