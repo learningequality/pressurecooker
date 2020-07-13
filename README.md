@@ -18,6 +18,13 @@ A library of various media processing functions and utilities
  - To handle ExtractorError as permanent failure (do not try to download repeatedly)
  - New "lightweight" playlist downloader based on `extract_flat`
  - New get-all-subs for `youtube_id` helper that uses API (if token present) and youtube-dl as fallback
+ - Add to  Youtube video API (support for start time)
+   https://www.youtube.com/watch?v=GOJUNJ1o394&t=52
+   End time complicated https://www.youtube.com/embed/WA8sLsM3McU?start=15&end=20
+   but still possible https://stackoverflow.com/questions/4661905/how-to-customize-an-end-time-for-a-youtube-video
+   See https://developers.google.com/youtube/player_parameters
+
+
 
 
 ## Converting caption files
