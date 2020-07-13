@@ -6,18 +6,14 @@ A library of various media processing functions and utilities
 
 * [Install ffmpeg](https://ffmpeg.org/) if you don't have it already.
 
-* [Install ImageMagick](https://www.imagemagick.org/) if you don't have it already. (If you are running Windows, you will need to add a `MAGICK_HOME` environment variable that points to your ImageMagick directory)
-
 * [Install GhostScript](https://www.ghostscript.com/) if you don't have it already.
 
 * [Install poppler-utils](https://poppler.freedesktop.org/) if you don't have it already
 
 
-## TODO for youtube v2
- - cache json info
+## TODO
+ - pressurecooker.youtube v2 spec: see https://github.com/learningequality/pressurecooker/issues/32
  - To handle ExtractorError as permanent failure (do not try to download repeatedly)
- - New "lightweight" playlist downloader based on `extract_flat`
- - New get-all-subs for `youtube_id` helper that uses API (if token present) and youtube-dl as fallback
  - Add to  Youtube video API (support for start time)
    https://www.youtube.com/watch?v=GOJUNJ1o394&t=52
    End time complicated https://www.youtube.com/embed/WA8sLsM3McU?start=15&end=20
