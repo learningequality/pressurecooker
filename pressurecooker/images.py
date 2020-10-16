@@ -230,6 +230,40 @@ def create_tiled_image(source_images, fpath_out):
         raise ThumbnailGenerationError("Failed due to {}".format(e))
 
 
+def convert_image(filename, dest_dir=None, size=None, format='PNG'):
+    """
+    Converts an image to a specified output format. The converted image will have the same
+    file basename as filename, but with the extension of the converted format.
+
+    :param filename: Filename of image to covert.
+    :param dest_dir: Destination directory for image, if None will save to same directory as filename.
+    :param size: Tuple of size of new image, if None, image is not resized.
+    :param format: File extension of format to convert to (e.g. PNG, JPG), Defaults to PNG.
+
+    :returns: Path to converted file.
+    """
+
+    assert os.path.exists(filename), "Image file not found: {}".format(os.path.abspath(filename))
+
+    if not dest_dir:
+        dest_dir = os.path.dirname(os.path.abspath(filename))
+
+    dest_filename_base = os.path.basename(filename)
+    base, ext = os.path.splitext(dest_filename_base)
+    new_filename = base + ".{}".format(format.lower())
+    dest_filename = os.path.join(dest_dir, new_filename)
+
+    img = Image.open(filename)
+
+    dest_img = img.convert("RGB")
+
+    # resive image to thumbnail dimensions
+    if size:
+        dest_img = dest_img.resize(size, Image.ANTIALIAS)
+    dest_img.save(dest_filename)
+
+    return dest_filename
+
 
 # EXCEPTIONS
 ################################################################################
