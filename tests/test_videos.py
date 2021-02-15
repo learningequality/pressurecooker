@@ -52,6 +52,18 @@ def high_res_video():
         f.flush()
     return f            # returns a temporary file with a closed file descriptor
 
+@pytest.fixture
+def high_res_video_webm():
+    with TempFile(suffix='.webm') as f:
+        resp = requests.get(
+            "https://mirrors.creativecommons.org/movingimages/webm/CreativeCommonsPlusCommercial_720p.webm",
+            stream=True
+        )
+        for chunk in resp.iter_content(chunk_size=1048576):
+            f.write(chunk)
+        f.flush()
+    return f            # returns a temporary file with a closed file descriptor
+
 
 @pytest.fixture
 def low_res_ogv_video():
@@ -109,6 +121,10 @@ class Test_check_video_resolution:
 
     def test_detects_high_res_videos(self, high_res_video):
         preset = videos.guess_video_preset_by_resolution(high_res_video.name)
+        assert preset == format_presets.VIDEO_HIGH_RES
+
+    def test_detects_high_res_videos_webm(self, high_res_video_webm):
+        preset = videos.guess_video_preset_by_resolution(high_res_video_webm.name)
         assert preset == format_presets.VIDEO_HIGH_RES
 
 
