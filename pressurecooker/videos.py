@@ -1,10 +1,13 @@
 import re
 import subprocess
+import logging
 
 from le_utils.constants import format_presets
 
 from .images import ThumbnailGenerationError
 
+LOGGER = logging.getLogger("VideoResource")
+LOGGER.setLevel(logging.DEBUG)
 
 def guess_video_preset_by_resolution(videopath):
     """
@@ -13,18 +16,23 @@ def guess_video_preset_by_resolution(videopath):
     Return appropriate video format preset: VIDEO_HIGH_RES or VIDEO_LOW_RES.
     """
     try:
+        LOGGER.debug("Entering 'guess_video_preset_by_resolution' method")
         result = subprocess.check_output(['ffprobe', '-v', 'error', '-print_format', 'json', '-show_entries',
                                           'stream=width,height', '-of', 'default=noprint_wrappers=1', str(videopath)])
+        LOGGER.debug("ffprobe stream result = {}".format(result))
         pattern = re.compile('width=([0-9]*)[^height]+height=([0-9]*)')
         match = pattern.search(str(result))
         if match is None:
             return format_presets.VIDEO_LOW_RES
         width, height = int(match.group(1)), int(match.group(2))
         if height >= 720:
+            LOGGER.info('Video preset from {} = high resolution'.format(videopath))
             return format_presets.VIDEO_HIGH_RES
         else:
+            LOGGER.info('Video preset from {} = low resolution'.format(videopath))
             return format_presets.VIDEO_LOW_RES
-    except Exception:
+    except Exception as e:
+        LOGGER.warning(e)
         return format_presets.VIDEO_LOW_RES
 
 
